@@ -1,24 +1,16 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Interactive Map</title>
+  <title>Simple GeoJSON Map</title>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
   <style>
-    #map { height: 90vh; }
-    #controls { margin: 10px; }
+    #map { height: 100vh; }
   </style>
 </head>
 <body>
-  <div id="controls">
-    <label for="attributeSelect">Select Attribute:</label>
-    <select id="attributeSelect">
-      <option value="attribute1">Attribute 1</option>
-      <option value="attribute2">Attribute 2</option>
-    </select>
-  </div>
   <div id="map"></div>
   <script>
     // Initialize the map
@@ -27,62 +19,14 @@
     // URL to your GeoJSON file
     var geojsonUrl = 'https://drive.google.com/uc?export=download&id=1IPm9MwbEnKNXUn89FBpqeL9A6n5W2CwD';
 
-    // Function to style features based on selected attribute
-    function getStyle(attribute) {
-      return function(feature) {
-        return {
-          radius: 8,
-          fillColor: getColor(feature.properties[attribute]),
-          color: "#000",
-          weight: 1,
-          opacity: 1,
-          fillOpacity: 0.8
-        };
-      };
-    }
-
-    // Function to get color based on attribute value
-    function getColor(value) {
-      return value > 30 ? '#800026' :
-             value > 20  ? '#BD0026' :
-             value > 10  ? '#E31A1C' :
-                           '#FFEDA0';
-    }
-
-    // Function to create popups
-    function onEachFeature(feature, layer) {
-      var popupContent = '<p><strong>' + feature.properties.name + '</strong></p>';
-      popupContent += '<p>Attribute 1: ' + feature.properties.attribute1 + '</p>';
-      popupContent += '<p>Attribute 2: ' + feature.properties.attribute2 + '</p>';
-      layer.bindPopup(popupContent);
-    }
-
     // Load and display the GeoJSON data
-    var geojsonLayer;
-    function loadGeoJSON(attribute) {
-      if (geojsonLayer) {
-        map.removeLayer(geojsonLayer);
-      }
-      fetch(geojsonUrl)
-        .then(response => response.json())
-        .then(data => {
-          geojsonLayer = L.geoJSON(data, {
-            pointToLayer: function (feature, latlng) {
-              return L.circleMarker(latlng, getStyle(attribute)(feature));
-            },
-            onEachFeature: onEachFeature
-          }).addTo(map);
-          map.fitBounds(geojsonLayer.getBounds()); // Center the map on the GeoJSON layer
-        });
-    }
-
-    // Initialize with the default attribute
-    loadGeoJSON('attribute1');
-
-    // Update map when a new attribute is selected
-    document.getElementById('attributeSelect').addEventListener('change', function(e) {
-      loadGeoJSON(e.target.value);
-    });
+    fetch(geojsonUrl)
+      .then(response => response.json())
+      .then(data => {
+        var geojsonLayer = L.geoJSON(data).addTo(map);
+        map.fitBounds(geojsonLayer.getBounds()); // Center the map on the GeoJSON layer
+      })
+      .catch(err => console.error('Error loading GeoJSON:', err));
   </script>
 </body>
 </html>
