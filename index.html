@@ -17,7 +17,7 @@
     var map = L.map('map').setView([0, 0], 2);
 
     // URL to your GeoServer WFS
-    var wfsUrl = 'https://sim4plan.uah.es/geoserver/parcel_transformation_analysis/ows?service=WFS&version=1.0.0&request=GetFeature&typeName=parcel_transformation_analysis%3Avuln_sta_cruz_tenerife&maxFeatures=50&outputFormat=application%2Fjson';
+    var wfsUrl = 'https://sim4plan.uah.es/geoserver/parcel_transformation_analysis/ows?service=WFS&version=1.0.0&request=GetFeature&typeName=parcel_transformation_analysis%3Avuln_sta_cruz_tenerife&maxFeatures=50&outputFormat=SHAPE-ZIP';
 
     // Load and display the GeoJSON data from GeoServer
     fetch(wfsUrl)
