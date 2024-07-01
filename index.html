@@ -7,21 +7,26 @@
   <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
   <style>
-    #map { height: 100vh; }
+    #map { height: 100vh; width: 100vw; }
   </style>
 </head>
 <body>
   <div id="map"></div>
   <script>
-    // Initialize the map
-    var map = L.map('map');
+    // Initialize the map with a default view
+    var map = L.map('map').setView([0, 0], 2);
 
     // URL to your GeoJSON file
     var geojsonUrl = 'https://drive.google.com/uc?export=download&id=1IPm9MwbEnKNXUn89FBpqeL9A6n5W2CwD';
 
     // Load and display the GeoJSON data
     fetch(geojsonUrl)
-      .then(response => response.json())
+      .then(response => {
+        if (!response.ok) {
+          throw new Error('Network response was not ok ' + response.statusText);
+        }
+        return response.json();
+      })
       .then(data => {
         var geojsonLayer = L.geoJSON(data).addTo(map);
         map.fitBounds(geojsonLayer.getBounds()); // Center the map on the GeoJSON layer
