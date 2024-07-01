@@ -17,7 +17,7 @@
     var map = L.map('map').setView([0, 0], 2);
 
     // URL to your GeoServer WFS
-    var wfsUrl = 'http://192.168.111.137:8080/geoserver/parcel_transformation_analysis/ows?service=WFS&version=1.0.0&request=GetFeature&typeName=parcel_transformation_analysis%3Avuln_sta_cruz_tenerife&maxFeatures=50&outputFormat=application%2Fjson';
+    var wfsUrl = 'https://github.com/nikoshur/Spanish_parcel_transformations/blob/5b77424d1b24de5dc41e3178dc88269df95c1a88/subset_test.geojson';
 
     // Load and display the GeoJSON data from GeoServer
     fetch(wfsUrl)
