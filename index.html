@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>GeoServer Shapefile Map</title>
+  <title>GeoServer GeoJSON Map</title>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
@@ -16,11 +16,11 @@
     // Initialize the map with a default view
     var map = L.map('map').setView([0, 0], 2);
 
-    // URL to your GeoServer WFS
-    var wfsUrl = 'https://sim4plan.uah.es/geoserver/parcel_transformation_analysis/ows?service=WFS&version=1.0.0&request=GetFeature&typeName=parcel_transformation_analysis%3Avuln_sta_cruz_tenerife&maxFeatures=50&outputFormat=application%2Fjson&srsName=EPSG:4326';
+    // URL to your GeoServer WFS with reprojection to EPSG:4326 and maxFeatures
+    var geojsonUrl = 'https://sim4plan.uah.es/geoserver/parcel_transformation_analysis/ows?service=WFS&version=1.0.0&request=GetFeature&typeName=parcel_transformation_analysis%3Avuln_sta_cruz_tenerife&maxFeatures=50&outputFormat=application%2Fjson&srsName=EPSG:4326';
 
-    // Load and display the GeoJSON data from GeoServer
-    fetch(wfsUrl)
+    // Load and display the GeoJSON data
+    fetch(geojsonUrl)
       .then(response => {
         if (!response.ok) {
           throw new Error('Network response was not ok ' + response.statusText);
@@ -28,6 +28,7 @@
         return response.json();
       })
       .then(data => {
+        console.log('Fetched GeoJSON data:', data); // Debugging: log fetched data to the console
         var geojsonLayer = L.geoJSON(data).addTo(map);
         map.fitBounds(geojsonLayer.getBounds()); // Center the map on the GeoJSON layer
       })
