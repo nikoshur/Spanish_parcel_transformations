@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Simple GeoJSON Map</title>
+  <title>GeoServer Shapefile Map</title>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
@@ -16,11 +16,11 @@
     // Initialize the map with a default view
     var map = L.map('map').setView([0, 0], 2);
 
-    // URL to your GeoJSON file
-    var geojsonUrl = 'https://drive.google.com/uc?export=download&id=1IPm9MwbEnKNXUn89FBpqeL9A6n5W2CwD';
+    // URL to your GeoServer WFS
+    var wfsUrl = 'http://192.168.111.137:8080/geoserver/parcel_transformation_analysis/ows?service=WFS&version=1.0.0&request=GetFeature&typeName=parcel_transformation_analysis%3Avuln_sta_cruz_tenerife&maxFeatures=50&outputFormat=application%2Fjson';
 
-    // Load and display the GeoJSON data
-    fetch(geojsonUrl)
+    // Load and display the GeoJSON data from GeoServer
+    fetch(wfsUrl)
       .then(response => {
         if (!response.ok) {
           throw new Error('Network response was not ok ' + response.statusText);
