@@ -1,11 +1,14 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>GeoServer GeoJSON Map</title>
+  <title>GeoServer GeoJSON Map with Clustering</title>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster/dist/MarkerCluster.css" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster/dist/MarkerCluster.Default.css" />
   <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+  <script src="https://unpkg.com/leaflet.markercluster/dist/leaflet.markercluster-src.js"></script>
   <style>
     #map { height: 100vh; width: 100vw; }
   </style>
@@ -16,9 +19,11 @@
     // Initialize the map with a default view
     var map = L.map('map').setView([0, 0], 2);
 
-    // URL to your GeoServer WFS with reprojection to EPSG:4326 and maxFeatures
+    // URL to your GeoServer WFS with reprojection to EPSG:4326 and increased maxFeatures
     var geojsonUrl = 'https://sim4plan.uah.es/geoserver/parcel_transformation_analysis/ows?service=WFS&version=1.0.0&request=GetFeature&typeName=parcel_transformation_analysis%3Avuln_sta_cruz_tenerife&maxFeatures=1000000&outputFormat=application%2Fjson&srsName=EPSG:4326';
-    
+
+    // Create a marker cluster group
+    var markers = L.markerClusterGroup();
 
     // Load and display the GeoJSON data
     fetch(geojsonUrl)
@@ -29,9 +34,14 @@
         return response.json();
       })
       .then(data => {
-        console.log('Fetched GeoJSON data:', data); // Debugging: log fetched data to the console
-        var geojsonLayer = L.geoJSON(data).addTo(map);
-        map.fitBounds(geojsonLayer.getBounds()); // Center the map on the GeoJSON layer
+        var geojsonLayer = L.geoJSON(data, {
+          pointToLayer: function (feature, latlng) {
+            return L.marker(latlng);
+          }
+        });
+        markers.addLayer(geojsonLayer);
+        map.addLayer(markers);
+        map.fitBounds(markers.getBounds()); // Center the map on the GeoJSON layer
       })
       .catch(err => console.error('Error loading GeoJSON:', err));
   </script>
