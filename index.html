@@ -7,24 +7,35 @@
   <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
   <style>
-    #map { height: 100vh; width: 100vw; }
+    #map { height: 90vh; width: 100vw; }
+    #citySelector { height: 10vh; width: 100vw; text-align: center; padding: 10px; }
+    #citySelector select { padding: 5px; font-size: 16px; }
   </style>
 </head>
 <body>
+  <div id="citySelector">
+    <label for="cities">Select a city: </label>
+    <select id="cities"></select>
+  </div>
   <div id="map"></div>
   <script>
     // Initialize the map with a default view
     var map = L.map('map').setView([0, 0], 2);
 
     // Base URL for GeoServer WFS requests
-    
-    // var geojsonUrl = 'https://sim4plan.uah.es/geoserver/parcel_transformation_analysis/ows?service=WFS&version=1.0.0&request=GetFeature&typeName=parcel_transformation_analysis%3AALICANTE_gdf_fusion&maxFeatures=1000000&outputFormat=application%2Fjson&srsName=EPSG:4326';
-    // var baseUrl = 'http://your-geoserver-domain/geoserver/your_workspace/ows?service=WFS&version=1.0.0&request=GetFeature&outputFormat=application/json&srsName=EPSG:4326&maxFeatures=10000&typeName=your_workspace:';
-
     var baseUrl = 'https://sim4plan.uah.es/geoserver/parcel_transformation_analysis/ows?service=WFS&version=1.0.0&request=GetFeature&outputFormat=application%2Fjson&srsName=EPSG:4326&maxFeatures=1000000&typeName=parcel_transformation_analysis:';
 
     // List of city names
-    var cities = ["ALICANTE", "MURCIA"];
+    var cities = ["ALICANTE", "A_CORUÑA"];
+
+    // Generate dropdown options dynamically
+    var citySelector = document.getElementById('cities');
+    cities.forEach(city => {
+      var option = document.createElement('option');
+      option.value = city;
+      option.text = city.replace('_', ' '); // Replace underscores with spaces for display
+      citySelector.appendChild(option);
+    });
 
     // Function to generate WFS URLs for each city
     function generateUrls(cities) {
@@ -56,19 +67,19 @@
     Promise.all(cities.map(city => 
       createLayer(wfsUrls[city]).then(layer => { cityLayers[city] = layer; })
     )).then(() => {
-      // Add all layers to the map, but only show one initially
-      var baseLayers = cities.reduce((layers, city) => {
-        layers[city.replace('_', ' ')] = cityLayers[city];
-        return layers;
-      }, {});
-
-      cityLayers["ALICANTE"].addTo(map);  // Show Alicante layer initially
-
-      // Add layer control to switch between cities
-      L.control.layers(baseLayers).addTo(map);
-
-      // Fit map to the initial layer
+      // Add initial layer to the map
+      cityLayers["ALICANTE"].addTo(map);
       map.fitBounds(cityLayers["ALICANTE"].getBounds());
+
+      // Handle city selection from the dropdown
+      document.getElementById('cities').addEventListener('change', function(event) {
+        var selectedCity = event.target.value;
+        // Remove existing layers
+        Object.values(cityLayers).forEach(layer => map.removeLayer(layer));
+        // Add the selected city layer
+        cityLayers[selectedCity].addTo(map);
+        map.fitBounds(cityLayers[selectedCity].getBounds());
+      });
     });
   </script>
 </body>
