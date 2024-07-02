@@ -7,7 +7,7 @@
   <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
   <style>
-    #map { height: 80vh; width: 100vw; background-color: #f0f0f0; } /* Lighter background color */
+    #map2021, #map2023 { height: 45vh; width: 100vw; background-color: #f0f0f0; } /* Lighter background color */
     #controls { height: 10vh; width: 100vw; text-align: center; padding: 10px; }
     #controls select, #controls input { padding: 5px; font-size: 16px; }
   </style>
@@ -16,18 +16,13 @@
   <div id="controls">
     <label for="cities">Select a city: </label>
     <select id="cities"></select>
-    <br><br>
-    <label>
-      <input type="radio" name="year" value="2021" checked> 2021
-    </label>
-    <label>
-      <input type="radio" name="year" value="2023"> 2023
-    </label>
   </div>
-  <div id="map"></div>
+  <div id="map2021"></div>
+  <div id="map2023"></div>
   <script>
-    // Initialize the map with a default view
-    var map = L.map('map').setView([0, 0], 2);
+    // Initialize the maps with a default view
+    var map2021 = L.map('map2021').setView([0, 0], 2);
+    var map2023 = L.map('map2023').setView([0, 0], 2);
 
     // Base URL for GeoServer WFS requests
     var baseUrl = 'https://sim4plan.uah.es/geoserver/parcel_transformation_analysis/ows?service=WFS&version=1.0.0&request=GetFeature&outputFormat=application%2Fjson&srsName=EPSG:4326&maxFeatures=1000000&typeName=parcel_transformation_analysis:';
@@ -45,20 +40,18 @@
     });
 
     // Function to generate WFS URLs for each city and year
-    function generateUrls(cities, year) {
+    function generateUrls(cities) {
       return cities.reduce((urls, city) => {
-        if (year === "2021") {
-          urls[city] = baseUrl + city + "_gdf_fusion&CQL_FILTER=YEAR=2021";
-        } else if (year === "2023") {
-          urls[city] = baseUrl + city + "_gdf_fusion&CQL_FILTER=YEAR=2023%20OR%20ATTR_CL='UU_SA'";
-        }
+        urls[city] = {
+          "2021": baseUrl + city + "_gdf_fusion&CQL_FILTER=YEAR=2021",
+          "2023": baseUrl + city + "_gdf_fusion&CQL_FILTER=YEAR=2023%20OR%20ATTR_CL='UU_SA'"
+        };
         return urls;
       }, {});
     }
 
-    // Initialize with year 2021
-    var currentYear = "2021";
-    var wfsUrls = generateUrls(cities, currentYear);
+    // Generate WFS URLs
+    var wfsUrls = generateUrls(cities);
 
     // Function to fetch and create a GeoJSON layer with custom styles
     function createLayer(url, year) {
@@ -80,50 +73,57 @@
         .catch(err => console.error('Error loading GeoJSON:', err));
     }
 
-    // Create layers for all cities
+    // Create layers for all cities and both years
     var cityLayers = {};
-
-    Promise.all(cities.map(city =>
-      createLayer(wfsUrls[city], currentYear).then(layer => { cityLayers[city] = layer; })
-    )).then(() => {
-      // Add initial layer to the map
-      var currentCity = "ALICANTE";
-      cityLayers[currentCity].addTo(map);
-      map.fitBounds(cityLayers[currentCity].getBounds());
-
-      // Handle city selection from the dropdown
-      document.getElementById('cities').addEventListener('change', function(event) {
-        var selectedCity = event.target.value;
-        updateLayer(selectedCity, currentYear);
+    cities.forEach(city => {
+      cityLayers[city] = {
+        "2021": null,
+        "2023": null
+      };
+      createLayer(wfsUrls[city]["2021"], "2021").then(layer => {
+        cityLayers[city]["2021"] = layer;
       });
-
-      // Handle year selection from radio buttons
-      document.querySelectorAll('input[name="year"]').forEach(function(radio) {
-        radio.addEventListener('change', function(event) {
-          currentYear = event.target.value;
-          wfsUrls = generateUrls(cities, currentYear);
-          updateLayer(currentCity, currentYear);
-        });
+      createLayer(wfsUrls[city]["2023"], "2023").then(layer => {
+        cityLayers[city]["2023"] = layer;
       });
-
-      function updateLayer(city, year) {
-        // Preserve the current map view and zoom level
-        var currentView = map.getCenter();
-        var currentZoom = map.getZoom();
-
-        // Remove the current layer
-        if (cityLayers[currentCity]) {
-          map.removeLayer(cityLayers[currentCity]);
-        }
-        // Fetch and add the new layer
-        createLayer(wfsUrls[city], year).then(layer => {
-          cityLayers[city] = layer;
-          cityLayers[city].addTo(map);
-          map.setView(currentView, currentZoom); // Preserve the current view and zoom level
-          currentCity = city;
-        });
-      }
     });
+
+    // Sync maps
+    function syncMaps(map1, map2) {
+      map1.on('moveend', function() {
+        map2.setView(map1.getCenter(), map1.getZoom(), { animate: false });
+      });
+      map2.on('moveend', function() {
+        map1.setView(map2.getCenter(), map2.getZoom(), { animate: false });
+      });
+    }
+
+    // Sync the maps
+    syncMaps(map2021, map2023);
+
+    // Handle city selection from the dropdown
+    document.getElementById('cities').addEventListener('change', function(event) {
+      var selectedCity = event.target.value;
+      updateLayers(selectedCity);
+    });
+
+    function updateLayers(city) {
+      // Remove existing layers
+      map2021.eachLayer(layer => map2021.removeLayer(layer));
+      map2023.eachLayer(layer => map2023.removeLayer(layer));
+
+      // Add new layers
+      cityLayers[city]["2021"].addTo(map2021);
+      cityLayers[city]["2023"].addTo(map2023);
+
+      // Fit maps to the new layers' bounds
+      var bounds = cityLayers[city]["2021"].getBounds().extend(cityLayers[city]["2023"].getBounds());
+      map2021.fitBounds(bounds);
+      map2023.fitBounds(bounds);
+    }
+
+    // Set initial city
+    updateLayers("ALICANTE");
   </script>
 </body>
 </html>
