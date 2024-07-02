@@ -6,33 +6,106 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
-  <script src="https://unpkg.com/leaflet.vectorgrid/dist/Leaflet.VectorGrid.bundled.js"></script>
   <style>
-    #mapContainer { display: flex; }
-    #map2021, #map2023 { height: 90vh; width: 50vw; background-color: #f0f0f0; }
-    #controls { height: 10vh; width: 100vw; text-align: center; padding: 10px; }
-    #controls select { padding: 5px; font-size: 16px; }
+    
+    body, html { height: 100%; margin: 0; padding: 0; }
+    #mapContainer { display: flex; height: 90%; width: 100%; }
+    #map2021, #map2023 { flex: 1; position: relative; border: 2px solid #000; }
+	#separator { width: 2px; background: #000; height: 100%; }
+    #controls { height: 10%; width: 100%; text-align: center; padding: 10px; box-sizing: border-box; }
+    #controls select, #controls button { padding: 5px; font-size: 16px; }
+    .legend { padding: 10px; background: white; line-height: 1.5; color: #555; position: absolute; bottom: 20px; right: 20px; z-index: 1000; border-radius: 5px; box-shadow: 0 0 15px rgba(0,0,0,0.2); }
+    .legend .title { font-weight: bold; margin-bottom: 5px; }
+    .legend .item { display: flex; align-items: center; }
+    .legend .item span { width: 20px; height: 20px; display: inline-block; margin-right: 5px; }
+    .leaflet-control-container .leaflet-bottom.leaflet-left { display: flex; align-items: center; }
+    .epsg-code { background: white; padding: 2px 5px; border: 1px solid #000; border-radius: 3px; font-size: 12px; z-index: 1000; margin-left: 10px; }
+  </style>
   </style>
 </head>
 <body>
   <div id="controls">
     <label for="cities">Select a city: </label>
     <select id="cities"></select>
+	<button id="urbanLandUse">Urban Land Use</button>
+    <button id="toggleBaseMap">Toggle Base Map</button>
+    <button id="visualizeChanges">Visualize Changes</button>
+    <button id="classifyChanges">Classify Changes</button>
   </div>
+  
   <div id="mapContainer">
     <div id="map2021"></div>
+    <div id="separator"></div>
     <div id="map2023"></div>
   </div>
+  
+  <div id="legend" class="legend">
+    <div class="title">Legend</div>
+    <div class="item"><span style="background:#d3d3d3;"></span>Common Parcels (UU_SA)</div>
+    <div class="item"><span style="background:#808080;"></span>2021</div>
+    <div class="item"><span style="background:#f4a460;"></span>2023</div>
+    <div class="item"><span style="background:#add8e6;"></span>UU_DA</div>
+    <div class="item"><span style="background:#dda0dd;"></span>CU_DA</div>
+    <div class="item"><span style="background:#ffffe0;"></span>CU_SA</div>
+    <div class="item"><span style="background:#ffcccb;"></span>EXT</div>
+    <div class="item"><span style="background:#90ee90;"></span>NEW</div>
+  </div>
   <script>
+  
     // Initialize the maps with a default view
-    var map2021 = L.map('map2021').setView([0, 0], 2);
-    var map2023 = L.map('map2023').setView([0, 0], 2);
+    var map2021 = L.map('map2021').setView([38.3452, -0.4810], 13); // Center on Alicante
+    var map2023 = L.map('map2023').setView([38.3452, -0.4810], 13); // Center on Alicante
 
-    // Base URL for GeoServer WFS requests
-    var baseUrl = 'https://sim4plan.uah.es/geoserver/parcel_transformation_analysis/ows?service=WFS&version=1.0.0&request=GetFeature&outputFormat=application/json&srsName=EPSG:4326&maxFeatures=1000000&typeName=parcel_transformation_analysis:';
+	// Add OpenStreetMap grayscale tile layers
+	var baseLayer2021 = L.tileLayer('https://{s}.tiles.wmflabs.org/bw-mapnik/{z}/{x}/{y}.png', {
+	  attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+	});
+
+	var baseLayer2023 = L.tileLayer('https://{s}.tiles.wmflabs.org/bw-mapnik/{z}/{x}/{y}.png', {
+	  attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+	});
+	
+    baseLayer2021.addTo(map2021);
+    baseLayer2023.addTo(map2023);
+	
+    // Add scale control (only meters and larger scale)
+    var scaleControl = L.control.scale({ maxWidth: 200, metric: true, imperial: false }).addTo(map2021);
+
+    // Add EPSG code next to scale control
+    var epsgCodeControl = L.control({ position: 'bottomleft' });
+    epsgCodeControl.onAdd = function(map) {
+      var div = L.DomUtil.create('div', 'epsg-code');
+      div.innerHTML = 'EPSG:3857';
+      return div;
+    };
+    epsgCodeControl.addTo(map2021);
+    // Function to toggle base map
+    function toggleBaseMap() {
+      if (map2021.hasLayer(baseLayer2021)) {
+        map2021.removeLayer(baseLayer2021);
+      } else {
+        map2021.addLayer(baseLayer2021);
+      }
+      if (map2023.hasLayer(baseLayer2023)) {
+        map2023.removeLayer(baseLayer2023);
+      } else {
+        map2023.addLayer(baseLayer2023);
+      }
+
+      // Re-add WMS layers to ensure they are on top
+      updateLayers(document.getElementById('cities').value);
+    }
+
+    document.getElementById('toggleBaseMap').addEventListener('click', toggleBaseMap);
 
     // List of city names
     var cities = ["ALICANTE", "A_CORUÑA"];
+
+    // Bounding boxes for the cities in EPSG:4326
+    var cityBounds = {
+      "ALICANTE": [[38.35629, -0.45784], [38.67096, -0.23124]],
+      "A_CORUÑA": [[43.32779, -8.43117], [43.39873, -8.37377]]
+    };
 
     // Generate dropdown options dynamically
     var citySelector = document.getElementById('cities');
@@ -43,75 +116,132 @@
       citySelector.appendChild(option);
     });
 
-    // Function to generate WFS URLs for each city and year
-    function generateUrls(cities) {
-      return cities.reduce((urls, city) => {
-        urls[city] = {
-          "2021": `${baseUrl}${city}_gdf_fusion&CQL_FILTER=YEAR=2021`,
-          "2023": `${baseUrl}${city}_gdf_fusion&CQL_FILTER=YEAR=2023 OR ATTR_CL='UU_SA'`
-        };
-        return urls;
-      }, {});
+    // Base URL for GeoServer WMS requests
+    var baseUrl = 'https://sim4plan.uah.es/geoserver/parcel_transformation_analysis/wms';
+
+    // Function to generate WMS parameters for each city and year
+    function generateParams(city, year, query, style) {
+      const format = 'image/png';
+      const transparent = true;
+      const cql_filter = query;
+
+      return {
+        service: 'WMS',
+        version: '1.3.0',
+        request: 'GetMap',
+        layers: `parcel_transformation_analysis:${city}_gdf_fusion`,
+        styles: style,
+        format: format,
+        transparent: transparent,
+        cql_filter: cql_filter
+      };
     }
 
-    // Generate WFS URLs
-    var wfsUrls = generateUrls(cities);
-
-    // Function to create a VectorGrid layer with custom styles from GeoJSON data
-    function createVectorGridLayer(data, year) {
-      console.log('Creating VectorGrid layer for year:', year, 'with data:', data); // Debugging: log the GeoJSON data
-      return L.vectorGrid.slicer(data, {
-        vectorTileLayerStyles: {
-          sliced: function(properties, zoom) {
-            return {
-              fillColor: year === "2021" ? '#808080' : '#f4a460', // Darker grey for 2021, light brown for 2023
-              fillOpacity: 0.7,
-              stroke: false // No border
-            };
-          }
-        },
-        interactive: true
+    // Function to create WMS layer
+    function createWmsLayer(params) {
+      return L.tileLayer.wms(baseUrl, {
+        layers: params.layers,
+        format: params.format,
+        transparent: params.transparent,
+        version: params.version,
+        attribution: "GeoServer",
+        styles: params.styles,
+        cql_filter: params.cql_filter
       });
-    }
-
-    // Fetch and slice GeoJSON data for a city and year
-    function fetchAndSliceGeoJSON(url, year) {
-      return fetch(url)
-        .then(response => {
-          if (!response.ok) {
-            throw new Error('Network response was not ok ' + response.statusText);
-          }
-          return response.json();
-        })
-        .then(data => {
-          console.log('Fetched GeoJSON data for year:', year, 'from URL:', url, 'Data:', data); // Debugging: log fetched data
-          return createVectorGridLayer(data, year);
-        })
-        .catch(err => console.error('Error loading GeoJSON:', err));
     }
 
     // Create layers for all cities and both years
     var cityLayers = {};
-    var layerPromises = cities.map(city => {
+    cities.forEach(city => {
       cityLayers[city] = {
-        "2021": null,
-        "2023": null
+	  
+        "common2021": createWmsLayer(generateParams(city, "", "ATTR_CL='UU_SA'", "common")),
+		"common2023": createWmsLayer(generateParams(city, "", "ATTR_CL='UU_SA'", "common")),
+
+        "2021_simple": createWmsLayer(generateParams(city, "2021", "YEAR=2021 AND ATTR_CL<>'UU_SA'", "year2021")),
+		"2023_simple": createWmsLayer(generateParams(city, "2023", "YEAR=2023 AND ATTR_CL<>'UU_SA'", "year2023")),
+
+        "2021_cl": createWmsLayer(generateParams(city, "2021", "YEAR=2021 AND ATTR_CL<>'UU_SA'", "parcel_classification")),
+		"2023_cl": createWmsLayer(generateParams(city, "2023", "YEAR=2023 AND ATTR_CL<>'UU_SA'", "parcel_classification")),
+
+		"urbanLandUse_2021": createWmsLayer(generateParams(city, "2021", "YEAR=2021", "UrbanLandUse")),
+		"urbanLandUse_2023": createWmsLayer(generateParams(city, "2023", "YEAR=2023 OR ATTR_CL='UU_SA'", "UrbanLandUse"))
+
       };
-      return Promise.all([
-        fetchAndSliceGeoJSON(wfsUrls[city]["2021"], "2021").then(layer => {
-          cityLayers[city]["2021"] = layer;
-          if (city === "ALICANTE") {
-            layer.addTo(map2021);
-          }
-        }),
-        fetchAndSliceGeoJSON(wfsUrls[city]["2023"], "2023").then(layer => {
-          cityLayers[city]["2023"] = layer;
-          if (city === "ALICANTE") {
-            layer.addTo(map2023);
-          }
-        })
-      ]);
+      if (city === "ALICANTE") {
+        cityLayers[city]["2021_simple"].addTo(map2021);
+        cityLayers[city]["common2021"].addTo(map2021);
+        cityLayers[city]["2023_simple"].addTo(map2023);
+        cityLayers[city]["common2023"].addTo(map2023);
+        map2021.fitBounds(cityBounds["ALICANTE"]);
+        map2023.fitBounds(cityBounds["ALICANTE"]);
+      }
     });
+
+    // Handle city selection from the dropdown
+    document.getElementById('cities').addEventListener('change', function(event) {
+      var selectedCity = event.target.value;
+      updateLayers(selectedCity);
+      map2021.fitBounds(cityBounds[selectedCity]);
+      map2023.fitBounds(cityBounds[selectedCity]);
+    });
+
+    document.getElementById('urbanLandUse').addEventListener('click', function() {
+      var selectedCity = document.getElementById('cities').value;
+      updateLayers(selectedCity, "urbanLandUse");
+    });
+	
+	document.getElementById('visualizeChanges').addEventListener('click', function() {
+      var selectedCity = document.getElementById('cities').value;
+      updateLayers(selectedCity, "visualizeChanges");
+    });
+
+    document.getElementById('classifyChanges').addEventListener('click', function() {
+      var selectedCity = document.getElementById('cities').value;
+      updateLayers(selectedCity, "classifyChanges");
+    });
+	
+	function removeLayers(map) {
+      map.eachLayer(layer => {
+        if (layer._url && layer._url.indexOf('openstreetmap.org') === -1) { // Remove non-base layers
+          console.log('Removing layer:', layer);
+          map.removeLayer(layer);
+        }
+      });
+    }
+	
+    function updateLayers(city, mode = "visualizeChanges") {
+      console.log(`Updating layers for city: ${city}`);
+      
+      // Remove existing layers safely
+      removeLayers(map2021);
+      removeLayers(map2023);
+	  
+	  if (cityLayers[city]) {
+		if (mode === "visualizeChanges") {
+		
+		  cityLayers[city]["common2021"].addTo(map2021);
+		  cityLayers[city]["2021_simple"].addTo(map2021);
+		  cityLayers[city]["common2023"].addTo(map2023);
+		  cityLayers[city]["2023_simple"].addTo(map2023);
+
+		} else if (mode === "classifyChanges") {
+		
+		  cityLayers[city]["common2021"].addTo(map2021);
+		  cityLayers[city]["2021_cl"].addTo(map2021);
+		  cityLayers[city]["common2023"].addTo(map2023);
+		  cityLayers[city]["2023_cl"].addTo(map2023);
+		  
+		} else if (mode === "urbanLandUse") {
+		  
+		  cityLayers[city]["urbanLandUse_2021"].addTo(map2021);
+		  cityLayers[city]["urbanLandUse_2023"].addTo(map2023);
+
+		}
+	  } else {
+		console.error(`No layers found for city: ${city}`);
+	  }
+	}
 
     // Sync maps
     function syncMaps(map1, map2) {
@@ -135,31 +265,8 @@
     // Sync the maps
     syncMaps(map2021, map2023);
 
-    // Handle city selection from the dropdown
-    document.getElementById('cities').addEventListener('change', function(event) {
-      var selectedCity = event.target.value;
-      updateLayers(selectedCity);
-    });
-
-    function updateLayers(city) {
-      // Remove existing layers
-      map2021.eachLayer(layer => map2021.removeLayer(layer));
-      map2023.eachLayer(layer => map2023.removeLayer(layer));
-
-      // Add new layers
-      cityLayers[city]["2021"].addTo(map2021);
-      cityLayers[city]["2023"].addTo(map2023);
-
-      // Fit maps to the new layers' bounds
-      var bounds = cityLayers[city]["2021"].getBounds().extend(cityLayers[city]["2023"].getBounds());
-      map2021.fitBounds(bounds);
-      map2023.fitBounds(bounds);
-    }
-
-    // Set initial city once layers are loaded
-    Promise.all(layerPromises).then(() => {
-      updateLayers("ALICANTE");
-    });
+    // Set initial city
+    updateLayers("ALICANTE");
   </script>
 </body>
 </html>
