@@ -6,6 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+  <script src="https://unpkg.com/leaflet.vectorgrid/dist/Leaflet.VectorGrid.bundled.js"></script>
   <style>
     #mapContainer { display: flex; }
     #map2021, #map2023 { height: 90vh; width: 50vw; background-color: #f0f0f0; } /* Lighter background color */
@@ -28,7 +29,7 @@
     var map2023 = L.map('map2023').setView([0, 0], 2);
 
     // Base URL for GeoServer WFS requests
-    var baseUrl = 'https://sim4plan.uah.es/geoserver/parcel_transformation_analysis/ows?service=WFS&version=1.0.0&request=GetFeature&outputFormat=application%2Fjson&srsName=EPSG:4326&maxFeatures=1000000&typeName=parcel_transformation_analysis:';
+    var baseUrl = 'https://sim4plan.uah.es/geoserver/parcel_transformation_analysis/ows?service=WFS&version=1.0.0&request=GetFeature&outputFormat=application/json&srsName=EPSG:4326&maxFeatures=1000000&typeName=parcel_transformation_analysis:';
 
     // List of city names
     var cities = ["ALICANTE", "A_CORUÑA"];
@@ -46,8 +47,8 @@
     function generateUrls(cities) {
       return cities.reduce((urls, city) => {
         urls[city] = {
-          "2021": baseUrl + city + "_gdf_fusion&CQL_FILTER=YEAR=2021",
-          "2023": baseUrl + city + "_gdf_fusion&CQL_FILTER=YEAR=2023%20OR%20ATTR_CL='UU_SA'"
+          "2021": `${baseUrl}${city}_gdf_fusion&CQL_FILTER=YEAR=2021`,
+          "2023": `${baseUrl}${city}_gdf_fusion&CQL_FILTER=YEAR=2023 OR ATTR_CL='UU_SA'`
         };
         return urls;
       }, {});
@@ -56,8 +57,24 @@
     // Generate WFS URLs
     var wfsUrls = generateUrls(cities);
 
-    // Function to fetch and create a GeoJSON layer with custom styles
-    function createLayer(url, year) {
+    // Function to create a VectorGrid layer with custom styles from GeoJSON data
+    function createVectorGridLayer(data, year) {
+      return L.vectorGrid.slicer(data, {
+        vectorTileLayerStyles: {
+          sliced: function(properties, zoom) {
+            return {
+              fillColor: year === "2021" ? '#808080' : '#f4a460', // Darker grey for 2021, light brown for 2023
+              fillOpacity: 0.7,
+              stroke: false // No border
+            };
+          }
+        },
+        interactive: true
+      });
+    }
+
+    // Fetch and slice GeoJSON data for a city and year
+    function fetchAndSliceGeoJSON(url, year) {
       return fetch(url)
         .then(response => {
           if (!response.ok) {
@@ -65,36 +82,31 @@
           }
           return response.json();
         })
-        .then(data => {
-          var style = {
-            color: 'transparent', // No border
-            fillColor: year === "2021" ? '#808080' : '#f4a460', // Darker grey for 2021, light brown for 2023
-            fillOpacity: 0.7
-          };
-          return L.geoJSON(data, { style: style });
-        })
+        .then(data => createVectorGridLayer(data, year))
         .catch(err => console.error('Error loading GeoJSON:', err));
     }
 
     // Create layers for all cities and both years
     var cityLayers = {};
-    cities.forEach(city => {
+    var layerPromises = cities.map(city => {
       cityLayers[city] = {
         "2021": null,
         "2023": null
       };
-      createLayer(wfsUrls[city]["2021"], "2021").then(layer => {
-        cityLayers[city]["2021"] = layer;
-        if (city === "ALICANTE") {
-          layer.addTo(map2021);
-        }
-      });
-      createLayer(wfsUrls[city]["2023"], "2023").then(layer => {
-        cityLayers[city]["2023"] = layer;
-        if (city === "ALICANTE") {
-          layer.addTo(map2023);
-        }
-      });
+      return Promise.all([
+        fetchAndSliceGeoJSON(wfsUrls[city]["2021"], "2021").then(layer => {
+          cityLayers[city]["2021"] = layer;
+          if (city === "ALICANTE") {
+            layer.addTo(map2021);
+          }
+        }),
+        fetchAndSliceGeoJSON(wfsUrls[city]["2023"], "2023").then(layer => {
+          cityLayers[city]["2023"] = layer;
+          if (city === "ALICANTE") {
+            layer.addTo(map2023);
+          }
+        })
+      ]);
     });
 
     // Sync maps
@@ -140,8 +152,10 @@
       map2023.fitBounds(bounds);
     }
 
-    // Set initial city
-    updateLayers("ALICANTE");
+    // Set initial city once layers are loaded
+    Promise.all(layerPromises).then(() => {
+      updateLayers("ALICANTE");
+    });
   </script>
 </body>
 </html>
