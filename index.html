@@ -7,23 +7,34 @@
   <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
   <style>
-    #map { height: 90vh; width: 100vw; }
-    #citySelector { height: 10vh; width: 100vw; text-align: center; padding: 10px; }
-    #citySelector select { padding: 5px; font-size: 16px; }
+    #map { height: 80vh; width: 100vw; }
+    #controls { height: 10vh; width: 100vw; text-align: center; padding: 10px; }
+    #controls select, #controls input { padding: 5px; font-size: 16px; }
   </style>
 </head>
 <body>
-  <div id="citySelector">
+  <div id="controls">
     <label for="cities">Select a city: </label>
     <select id="cities"></select>
+    <br><br>
+    <label>
+      <input type="radio" name="year" value="2021" checked> 2021
+    </label>
+    <label>
+      <input type="radio" name="year" value="2023"> 2023
+    </label>
   </div>
   <div id="map"></div>
   <script>
     // Initialize the map with a default view
     var map = L.map('map').setView([0, 0], 2);
 
-    // Base URL for GeoServer WFS requests
-    var baseUrl = 'https://sim4plan.uah.es/geoserver/parcel_transformation_analysis/ows?service=WFS&version=1.0.0&request=GetFeature&outputFormat=application%2Fjson&srsName=EPSG:4326&maxFeatures=1000000&typeName=parcel_transformation_analysis:';
+    // Base URL for GeoServer WMS requests
+    //var baseUrl = 'http://your-geoserver-domain/geoserver/your_workspace/wms';
+    var baseUrl = 'https://sim4plan.uah.es/geoserver/parcel_transformation_analysis/wms';
+
+    //var baseUrl = 'https://sim4plan.uah.es/geoserver/parcel_transformation_analysis/ows?service=WFS&version=1.0.0&request=GetFeature&outputFormat=application%2Fjson&srsName=EPSG:4326&maxFeatures=1000000&typeName=parcel_transformation_analysis:';
+
 
     // List of city names
     var cities = ["ALICANTE", "A_CORUÑA"];
@@ -37,50 +48,59 @@
       citySelector.appendChild(option);
     });
 
-    // Function to generate WFS URLs for each city
-    function generateUrls(cities) {
-      return cities.reduce((urls, city) => {
-        urls[city] = baseUrl + city + "_gdf_fusion";
-        return urls;
-      }, {});
-    }
-
-    // Generate the WFS URLs for the cities
-    var wfsUrls = generateUrls(cities);
-
-    // Function to fetch and create a GeoJSON layer
-    function createLayer(url) {
-      return fetch(url)
-        .then(response => {
-          if (!response.ok) {
-            throw new Error('Network response was not ok ' + response.statusText);
-          }
-          return response.json();
+    // Create WMS layers for all cities and years
+    var wmsLayers = {};
+    cities.forEach(city => {
+      wmsLayers[city] = {
+        "2021": L.tileLayer.wms(baseUrl, {
+          layers: `your_workspace:${city + "_gdf_fusion"}`,
+          format: 'image/png',
+          transparent: true,
+          CQL_FILTER: "YEAR=2021",
+          attribution: "&copy; <a href='https://www.openstreetmap.org/copyright'>OpenStreetMap</a> contributors"
+        }),
+        "2023": L.tileLayer.wms(baseUrl, {
+          layers: `your_workspace:${city + "_gdf_fusion"}`,
+          format: 'image/png',
+          transparent: true,
+          CQL_FILTER: "YEAR=2023",
+          attribution: "&copy; <a href='https://www.openstreetmap.org/copyright'>OpenStreetMap</a> contributors"
         })
-        .then(data => L.geoJSON(data))
-        .catch(err => console.error('Error loading GeoJSON:', err));
-    }
+      };
+    });
 
-    // Create layers for all cities
-    var cityLayers = {};
+    // Add initial layer to the map
+    var currentCity = "ALICANTE";
+    var currentYear = "2021";
+    wmsLayers[currentCity][currentYear].addTo(map);
 
-    Promise.all(cities.map(city => 
-      createLayer(wfsUrls[city]).then(layer => { cityLayers[city] = layer; })
-    )).then(() => {
-      // Add initial layer to the map
-      cityLayers["ALICANTE"].addTo(map);
-      map.fitBounds(cityLayers["ALICANTE"].getBounds());
+    // Handle city selection from the dropdown
+    document.getElementById('cities').addEventListener('change', function(event) {
+      var selectedCity = event.target.value;
+      updateLayer(selectedCity, currentYear);
+    });
 
-      // Handle city selection from the dropdown
-      document.getElementById('cities').addEventListener('change', function(event) {
-        var selectedCity = event.target.value;
-        // Remove existing layers
-        Object.values(cityLayers).forEach(layer => map.removeLayer(layer));
-        // Add the selected city layer
-        cityLayers[selectedCity].addTo(map);
-        map.fitBounds(cityLayers[selectedCity].getBounds());
+    // Handle year selection from radio buttons
+    document.querySelectorAll('input[name="year"]').forEach(function(radio) {
+      radio.addEventListener('change', function(event) {
+        var selectedYear = event.target.value;
+        updateLayer(currentCity, selectedYear);
       });
     });
+
+    function updateLayer(city, year) {
+      // Remove the current layer
+      if (wmsLayers[currentCity][currentYear]) {
+        map.removeLayer(wmsLayers[currentCity][currentYear]);
+      }
+      // Add the new layer
+      currentCity = city;
+      currentYear = year;
+      wmsLayers[currentCity][currentYear].addTo(map);
+      // Fit map to the new layer bounds (useful if layer extent varies greatly)
+      // Note: WMS layers do not directly support fitBounds, so you might need an alternative method
+      // map.fitBounds(wmsLayers[currentCity][currentYear].getBounds());
+    }
   </script>
 </body>
 </html>
