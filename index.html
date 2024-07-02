@@ -7,7 +7,7 @@
   <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
   <style>
-    #map { height: 80vh; width: 100vw; }
+    #map { height: 80vh; width: 100vw; background-color: #f0f0f0; } /* Lighter background color */
     #controls { height: 10vh; width: 100vw; text-align: center; padding: 10px; }
     #controls select, #controls input { padding: 5px; font-size: 16px; }
   </style>
@@ -72,7 +72,7 @@
         .then(data => {
           var style = {
             color: 'transparent', // No border
-            fillColor: year === "2021" ? '#d3d3d3' : '#f4a460', // Light grey for 2021, light brown for 2023
+            fillColor: year === "2021" ? '#808080' : '#f4a460', // Darker grey for 2021, light brown for 2023
             fillOpacity: 0.7
           };
           return L.geoJSON(data, { style: style });
@@ -107,6 +107,10 @@
       });
 
       function updateLayer(city, year) {
+        // Preserve the current map view and zoom level
+        var currentView = map.getCenter();
+        var currentZoom = map.getZoom();
+
         // Remove the current layer
         if (cityLayers[currentCity]) {
           map.removeLayer(cityLayers[currentCity]);
@@ -115,7 +119,7 @@
         createLayer(wfsUrls[city], year).then(layer => {
           cityLayers[city] = layer;
           cityLayers[city].addTo(map);
-          map.fitBounds(cityLayers[city].getBounds());
+          map.setView(currentView, currentZoom); // Preserve the current view and zoom level
           currentCity = city;
         });
       }
