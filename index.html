@@ -50,7 +50,7 @@
         if (year === "2021") {
           urls[city] = baseUrl + city + "_gdf_fusion&CQL_FILTER=YEAR=2021";
         } else if (year === "2023") {
-          urls[city] = baseUrl + city + "_gdf_fusion&CQL_FILTER=YEAR=2023%20AND%20ATTR_CL='UU_SA'";
+          urls[city] = baseUrl + city + "_gdf_fusion&CQL_FILTER=YEAR=2023%20OR%20ATTR_CL='UU_SA'";
         }
         return urls;
       }, {});
@@ -71,8 +71,8 @@
         })
         .then(data => {
           var style = {
-            color: 'none', // No border
-            fillColor: year === "2021" ? '#D3D3D3' : '#F4A460', // Light grey for 2021, light brown for 2023
+            color: 'transparent', // No border
+            fillColor: year === "2021" ? '#d3d3d3' : '#f4a460', // Light grey for 2021, light brown for 2023
             fillOpacity: 0.7
           };
           return L.geoJSON(data, { style: style });
