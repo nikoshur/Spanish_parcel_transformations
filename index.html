@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>GeoServer GeoJSON Map</title>
+  <title>GeoServer City Parcels Map</title>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
@@ -16,23 +16,60 @@
     // Initialize the map with a default view
     var map = L.map('map').setView([0, 0], 2);
 
-    // URL to your GeoServer WFS with reprojection to EPSG:4326 and increased maxFeatures
-    var geojsonUrl = 'https://sim4plan.uah.es/geoserver/parcel_transformation_analysis/ows?service=WFS&version=1.0.0&request=GetFeature&typeName=parcel_transformation_analysis%3AALICANTE_gdf_fusion&maxFeatures=1000000&outputFormat=application%2Fjson&srsName=EPSG:4326';
+    // Base URL for GeoServer WFS requests
+    
+    // var geojsonUrl = 'https://sim4plan.uah.es/geoserver/parcel_transformation_analysis/ows?service=WFS&version=1.0.0&request=GetFeature&typeName=parcel_transformation_analysis%3AALICANTE_gdf_fusion&maxFeatures=1000000&outputFormat=application%2Fjson&srsName=EPSG:4326';
+    // var baseUrl = 'http://your-geoserver-domain/geoserver/your_workspace/ows?service=WFS&version=1.0.0&request=GetFeature&outputFormat=application/json&srsName=EPSG:4326&maxFeatures=10000&typeName=your_workspace:';
 
-    // Load and display the GeoJSON data
-    fetch(geojsonUrl)
-      .then(response => {
-        if (!response.ok) {
-          throw new Error('Network response was not ok ' + response.statusText);
-        }
-        return response.json();
-      })
-      .then(data => {
-        console.log('Fetched GeoJSON data:', data); // Debugging: log fetched data to the console
-        var geojsonLayer = L.geoJSON(data).addTo(map);
-        map.fitBounds(geojsonLayer.getBounds()); // Center the map on the GeoJSON layer
-      })
-      .catch(err => console.error('Error loading GeoJSON:', err));
+    var baseUrl = 'https://sim4plan.uah.es/geoserver/parcel_transformation_analysis/ows?service=WFS&version=1.0.0&request=GetFeature&outputFormat=application%2Fjson&srsName=EPSG:4326&maxFeatures=1000000&typeName=parcel_transformation_analysis:';
+
+    // List of city names
+    var cities = ["ALICANTE", "A_CORUÑA"];
+
+    // Function to generate WFS URLs for each city
+    function generateUrls(cities) {
+      return cities.reduce((urls, city) => {
+        urls[city] = baseUrl + city + "_gdf_fusion";
+        return urls;
+      }, {});
+    }
+
+    // Generate the WFS URLs for the cities
+    var wfsUrls = generateUrls(cities);
+
+    // Function to fetch and create a GeoJSON layer
+    function createLayer(url) {
+      return fetch(url)
+        .then(response => {
+          if (!response.ok) {
+            throw new Error('Network response was not ok ' + response.statusText);
+          }
+          return response.json();
+        })
+        .then(data => L.geoJSON(data))
+        .catch(err => console.error('Error loading GeoJSON:', err));
+    }
+
+    // Create layers for all cities
+    var cityLayers = {};
+
+    Promise.all(cities.map(city => 
+      createLayer(wfsUrls[city]).then(layer => { cityLayers[city] = layer; })
+    )).then(() => {
+      // Add all layers to the map, but only show one initially
+      var baseLayers = cities.reduce((layers, city) => {
+        layers[city.replace('_', ' ')] = cityLayers[city];
+        return layers;
+      }, {});
+
+      cityLayers["ALICANTE"].addTo(map);  // Show Alicante layer initially
+
+      // Add layer control to switch between cities
+      L.control.layers(baseLayers).addTo(map);
+
+      // Fit map to the initial layer
+      map.fitBounds(cityLayers["ALICANTE"].getBounds());
+    });
   </script>
 </body>
 </html>
