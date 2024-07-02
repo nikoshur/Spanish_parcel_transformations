@@ -7,9 +7,10 @@
   <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
   <style>
-    #map2021, #map2023 { height: 45vh; width: 100vw; background-color: #f0f0f0; } /* Lighter background color */
+    #mapContainer { display: flex; }
+    #map2021, #map2023 { height: 90vh; width: 50vw; background-color: #f0f0f0; } /* Lighter background color */
     #controls { height: 10vh; width: 100vw; text-align: center; padding: 10px; }
-    #controls select, #controls input { padding: 5px; font-size: 16px; }
+    #controls select { padding: 5px; font-size: 16px; }
   </style>
 </head>
 <body>
@@ -17,8 +18,10 @@
     <label for="cities">Select a city: </label>
     <select id="cities"></select>
   </div>
-  <div id="map2021"></div>
-  <div id="map2023"></div>
+  <div id="mapContainer">
+    <div id="map2021"></div>
+    <div id="map2023"></div>
+  </div>
   <script>
     // Initialize the maps with a default view
     var map2021 = L.map('map2021').setView([0, 0], 2);
@@ -82,19 +85,34 @@
       };
       createLayer(wfsUrls[city]["2021"], "2021").then(layer => {
         cityLayers[city]["2021"] = layer;
+        if (city === "ALICANTE") {
+          layer.addTo(map2021);
+        }
       });
       createLayer(wfsUrls[city]["2023"], "2023").then(layer => {
         cityLayers[city]["2023"] = layer;
+        if (city === "ALICANTE") {
+          layer.addTo(map2023);
+        }
       });
     });
 
     // Sync maps
     function syncMaps(map1, map2) {
-      map1.on('moveend', function() {
-        map2.setView(map1.getCenter(), map1.getZoom(), { animate: false });
+      var isMoving = false;
+      map1.on('move', function() {
+        if (!isMoving) {
+          isMoving = true;
+          map2.setView(map1.getCenter(), map1.getZoom(), { animate: false });
+          isMoving = false;
+        }
       });
-      map2.on('moveend', function() {
-        map1.setView(map2.getCenter(), map2.getZoom(), { animate: false });
+      map2.on('move', function() {
+        if (!isMoving) {
+          isMoving = true;
+          map1.setView(map2.getCenter(), map2.getZoom(), { animate: false });
+          isMoving = false;
+        }
       });
     }
 
