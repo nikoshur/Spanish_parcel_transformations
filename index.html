@@ -44,10 +44,14 @@
       citySelector.appendChild(option);
     });
 
-    // Function to generate WFS URLs for each city
+    // Function to generate WFS URLs for each city and year
     function generateUrls(cities, year) {
       return cities.reduce((urls, city) => {
-        urls[city] = baseUrl + city + "_gdf_fusion" + "&CQL_FILTER=YEAR=" + year;
+        if (year === "2021") {
+          urls[city] = baseUrl + city + "_gdf_fusion&CQL_FILTER=YEAR=2021";
+        } else if (year === "2023") {
+          urls[city] = baseUrl + city + "_gdf_fusion&CQL_FILTER=YEAR=2023%20AND%20ATTR_CL='UU_CA'";
+        }
         return urls;
       }, {});
     }
