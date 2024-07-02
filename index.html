@@ -50,7 +50,7 @@
         if (year === "2021") {
           urls[city] = baseUrl + city + "_gdf_fusion&CQL_FILTER=YEAR=2021";
         } else if (year === "2023") {
-          urls[city] = baseUrl + city + "_gdf_fusion&CQL_FILTER=YEAR=2023%20AND%20ATTR_CL='UU_CA'";
+          urls[city] = baseUrl + city + "_gdf_fusion&CQL_FILTER=YEAR=2023%20AND%20ATTR_CL='UU_SA'";
         }
         return urls;
       }, {});
@@ -60,8 +60,8 @@
     var currentYear = "2021";
     var wfsUrls = generateUrls(cities, currentYear);
 
-    // Function to fetch and create a GeoJSON layer
-    function createLayer(url) {
+    // Function to fetch and create a GeoJSON layer with custom styles
+    function createLayer(url, year) {
       return fetch(url)
         .then(response => {
           if (!response.ok) {
@@ -69,7 +69,14 @@
           }
           return response.json();
         })
-        .then(data => L.geoJSON(data))
+        .then(data => {
+          var style = {
+            color: 'none', // No border
+            fillColor: year === "2021" ? '#D3D3D3' : '#F4A460', // Light grey for 2021, light brown for 2023
+            fillOpacity: 0.7
+          };
+          return L.geoJSON(data, { style: style });
+        })
         .catch(err => console.error('Error loading GeoJSON:', err));
     }
 
@@ -77,7 +84,7 @@
     var cityLayers = {};
 
     Promise.all(cities.map(city =>
-      createLayer(wfsUrls[city]).then(layer => { cityLayers[city] = layer; })
+      createLayer(wfsUrls[city], currentYear).then(layer => { cityLayers[city] = layer; })
     )).then(() => {
       // Add initial layer to the map
       var currentCity = "ALICANTE";
@@ -105,7 +112,7 @@
           map.removeLayer(cityLayers[currentCity]);
         }
         // Fetch and add the new layer
-        createLayer(wfsUrls[city]).then(layer => {
+        createLayer(wfsUrls[city], year).then(layer => {
           cityLayers[city] = layer;
           cityLayers[city].addTo(map);
           map.fitBounds(cityLayers[city].getBounds());
