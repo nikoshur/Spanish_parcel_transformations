@@ -1,26 +1,82 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>GeoServer City Parcels Map</title>
+  <title>Leaflet Map with WMS Layers, Controls, and Legend</title>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/proj4js/2.7.5/proj4.js"></script>
+  
   <style>
-    
     body, html { height: 100%; margin: 0; padding: 0; }
-    #mapContainer { display: flex; height: 90%; width: 100%; }
-    #map2021, #map2023 { flex: 1; position: relative; border: 2px solid #000; }
+    #mapContainer { flex: 1; display: flex; height: 100%; border: 2px solid #000; box-sizing: border-box; }
+	#map2021, #map2023 { flex: 1; position: relative; border: 2px solid #000; }
 	#separator { width: 2px; background: #000; height: 100%; }
-    #controls { height: 10%; width: 100%; text-align: center; padding: 10px; box-sizing: border-box; }
-    #controls select, #controls button { padding: 5px; font-size: 16px; }
-    .legend { padding: 10px; background: white; line-height: 1.5; color: #555; position: absolute; bottom: 20px; right: 20px; z-index: 1000; border-radius: 5px; box-shadow: 0 0 15px rgba(0,0,0,0.2); }
-    .legend .title { font-weight: bold; margin-bottom: 5px; }
-    .legend .item { display: flex; align-items: center; }
-    .legend .item span { width: 20px; height: 20px; display: inline-block; margin-right: 5px; }
-    .leaflet-control-container .leaflet-bottom.leaflet-left { display: flex; align-items: center; }
-    .epsg-code { background: white; padding: 2px 5px; border: 1px solid #000; border-radius: 3px; font-size: 12px; z-index: 1000; margin-left: 10px; }
-  </style>
+	#controls { width: 250px; display: flex; flex-direction: column; justify-content: flex-start; align-items: center; padding: 10px; box-sizing: border-box; background-color: #f9f9f9; border-left: 2px solid #000; }
+	#controls select, #controls button { padding: 10px; font-size: 18px; margin-bottom: 10px; width: 100%; }
+	#controls {
+	  position: absolute;
+	  right: 20px;
+	  top: 20px;
+	  display: flex;
+	  flex-direction: column;
+	  align-items: flex-start;
+	  padding: 10px;
+	  background: white;
+	  border-radius: 5px;
+	  box-shadow: 0 0 15px rgba(0,0,0,0.2);
+	  z-index: 1000;
+	}
+
+	#controls label, 
+	#controls select, 
+	#controls button {
+	  margin-bottom: 10px;
+	  width: 100%;
+	}
+
+	#controls button {
+	  padding: 10px;
+	  font-size: 18px;
+	  width: 100%;
+	}
+	#description {
+	  margin-top: 10px;
+	  padding-top: 10px;
+	  border-top: 1px solid #ddd;
+	  width: 100%;
+	}
+
+	#description h3 {
+	  margin: 0 0 10px 0;
+	  font-size: 18px;
+	}
+
+	#description p {
+	  margin: 0;
+	  font-size: 16px;
+	}
+    .legend { padding: 12.5px; background: white; line-height: 1.875; color: #555; position: absolute; bottom: 38px; right: 20px; z-index: 1000; border-radius: 5px; box-shadow: 0 0 15px rgba(0,0,0,0.2); width: auto; max-width: 300px; }
+	.legend .item { display: flex; align-items: center; margin-bottom: 6.25px; flex-wrap: wrap; }
+	.legend .item span.color-box { width: 25px; height: 25px; display: inline-block; margin-right: 12.5px; }
+	.legend .item span.label { font-size: 17.5px; flex: 1; }
+	.leaflet-control-container .leaflet-bottom.leaflet-left { display: flex; align-items: center; }
+	.map-title {
+	  position: absolute;
+	  top: 10px;
+	  left: 50%;
+	  transform: translateX(-50%);
+	  background: white;
+	  padding: 5px 10px;
+	  border: 2px solid #000;
+	  border-radius: 5px;
+	  font-size: 16px;
+	  font-weight: bold;
+	  z-index: 1000;
+	  white-space: nowrap;
+	}
+	.epsg-code { background: white; padding: 2px 5px; border: 1px solid #000; border-radius: 3px; font-size: 12px; z-index: 1000; margin-left: 10px; }
   </style>
 </head>
 <body>
@@ -31,43 +87,60 @@
     <button id="toggleBaseMap">Toggle Base Map</button>
     <button id="visualizeChanges">Visualize Changes</button>
     <button id="classifyChanges">Classify Changes</button>
+	<button id="singleTransformations">Single Transformations</button>
+    <button id="groupedTransformations">Grouped Transformations</button>
+	<div id="description">
+		<h3 id="descriptionTitle"></h3>
+		<p id="descriptionText"></p>
+	</div>
   </div>
   
-  <div id="mapContainer">
-    <div id="map2021"></div>
-    <div id="separator"></div>
-    <div id="map2023"></div>
-  </div>
+	<div id="mapContainer">
+		<div id="map2021">
+			<div class="map-title">Situation of parcels in 2021</div>
+		</div>
+		<div id="separator"></div>
+		<div id="map2023">
+			<div class="map-title">Situation of parcels in 2023</div>
+		</div>
+	</div>
   
   <div id="legend" class="legend">
-    <div class="title">Legend</div>
-    <div class="item"><span style="background:#d3d3d3;"></span>Common Parcels (UU_SA)</div>
-    <div class="item"><span style="background:#808080;"></span>2021</div>
-    <div class="item"><span style="background:#f4a460;"></span>2023</div>
-    <div class="item"><span style="background:#add8e6;"></span>UU_DA</div>
-    <div class="item"><span style="background:#dda0dd;"></span>CU_DA</div>
-    <div class="item"><span style="background:#ffffe0;"></span>CU_SA</div>
-    <div class="item"><span style="background:#ffcccb;"></span>EXT</div>
-    <div class="item"><span style="background:#90ee90;"></span>NEW</div>
+    <div id="legendItems"></div>
   </div>
+  
   <script>
   
+    // Define multiple CRS in proj4
+	proj4.defs("EPSG:25830", "+proj=utm +zone=30 +ellps=GRS80 +units=m +no_defs");
+	proj4.defs("EPSG:4258", "+proj=utm +zone=30 +ellps=GRS80 +units=m +no_defs");
+	proj4.defs("EPSG:3857", "+proj=merc +lon_0=0 +k=1 +x_0=0 +y_0=0 +datum=WGS84 +units=m +no_defs");
+  
+    // Function to generate a cache-busting parameter
+    function getCacheBustingParam() {
+      return Math.floor(Math.random() * 1000000);
+    }
+
     // Initialize the maps with a default view
     var map2021 = L.map('map2021').setView([38.3452, -0.4810], 13); // Center on Alicante
     var map2023 = L.map('map2023').setView([38.3452, -0.4810], 13); // Center on Alicante
 
-	// Add OpenStreetMap grayscale tile layers
-	var baseLayer2021 = L.tileLayer('https://{s}.tiles.wmflabs.org/bw-mapnik/{z}/{x}/{y}.png', {
-	  attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-	});
+    // Add CartoDB Positron tile layers (Grayscale) with cache-busting parameter
+    var baseLayer2021 = L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png?' + getCacheBustingParam(), {
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+      subdomains: 'abcd',
+      maxZoom: 19
+    });
 
-	var baseLayer2023 = L.tileLayer('https://{s}.tiles.wmflabs.org/bw-mapnik/{z}/{x}/{y}.png', {
-	  attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-	});
-	
+    var baseLayer2023 = L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png?' + getCacheBustingParam(), {
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+      subdomains: 'abcd',
+      maxZoom: 19
+    });
+
     baseLayer2021.addTo(map2021);
     baseLayer2023.addTo(map2023);
-	
+
     // Add scale control (only meters and larger scale)
     var scaleControl = L.control.scale({ maxWidth: 200, metric: true, imperial: false }).addTo(map2021);
 
@@ -79,7 +152,8 @@
       return div;
     };
     epsgCodeControl.addTo(map2021);
-    // Function to toggle base map
+	
+	// Function to toggle base map
     function toggleBaseMap() {
       if (map2021.hasLayer(baseLayer2021)) {
         map2021.removeLayer(baseLayer2021);
@@ -95,17 +169,72 @@
       // Re-add WMS layers to ensure they are on top
       updateLayers(document.getElementById('cities').value);
     }
-
+	
     document.getElementById('toggleBaseMap').addEventListener('click', toggleBaseMap);
 
     // List of city names
-    var cities = ["ALICANTE", "A_CORUÑA"];
+    var cities = ['A_CORUÑA', 'ALBACETE', 'ALICANTE', 'ALMERIA', 'AVILA', 'BADAJOZ',
+	'BARCELONA', 'BURGOS', 'CACERES', 'CADIZ', 'CASTELLO_DE_LA_PLANA', 'CEUTA', 'CIUDAD_REAL',
+	'CORDOBA', 'CUENCA', 'GIRONA', 'GRANADA', 'GUADALAJARA', 'HUELVA', 'HUESCA', 'JAEN',
+	'LAS_PALMAS_DE_GRAN_CANARIA', 'LEON', 'LLEIDA', 'LOGROÑO', 'LUGO', 'MADRID', 'MALAGA',
+	'MELILLA', 'MURCIA', 'OURENSE', 'OVIEDO', 'PALENCIA', 'PALMA_DE_MALLORCA',
+	'PONTEVEDRA', 'SALAMANCA', 'SANTA_CRUZ_DE_TENERIFE','SANTANDER', 'SEGOVIA', 'SEVILLA',
+	'SORIA', 'TARRAGONA', 'TERUEL', 'TOLEDO', 'VALENCIA', 'VALLADOLID','ZAMORA', 'ZARAGOZA'];
 
+	
     // Bounding boxes for the cities in EPSG:4326
     var cityBounds = {
-      "ALICANTE": [[38.35629, -0.45784], [38.67096, -0.23124]],
-      "A_CORUÑA": [[43.32779, -8.43117], [43.39873, -8.37377]]
-    };
+	"ALBACETE": [[38.70457971089532, -2.030425677356718], [39.13989775872897, -1.6527934329911105]],
+	"ALICANTE": [[38.16498043767475, -0.6318825980295595], [38.47136281030517, -0.4039538398224607]],
+	"ALMERIA": [[36.74386998083189, -2.50306041080157], [36.895637139580145, -2.2116499734254167]],
+	"AVILA": [[40.58363465901149, -4.769741000986437], [40.70997531353256, -4.520467039152401]],
+	"A_CORU\u00d1A": [[43.30325359064104, -8.462084912574257], [43.38637711065658, -8.374603625994366]],
+	"BADAJOZ": [[38.763412088767396, -7.045428448198299], [39.05173911203628, -6.736375938586355]],
+	"BARCELONA": [[41.31700736799394, 2.08050194056737], [41.468251106557716, 2.2280803741275035]],
+	"BURGOS": [[42.284766871296604, -3.7747399622826503], [42.39525962825185, -3.591954600805907]],
+	"CACERES": [[39.19463256892167, -6.538161075311128], [39.52352123102339, -6.275949529219845]],
+	"CASTELLO_DE_LA_PLANA": [[39.94288660036732, -0.14493780834496225], [40.03150164431048, 0.03821629305703076]],
+	"CEUTA": [[35.870988808710166, -5.376489814397943], [35.91678349724091, -5.281874664997248]],
+	"CIUDAD_REAL": [[38.86646969578507, -4.043256778599868], [39.05303256519222, -3.9013917659560966]],
+	"CADIZ": [[36.45747834,-6.30853982], [36.5452449, -6.22983392]],
+	"CORDOBA": [[37.73085002937891, -4.939750675594976], [38.010124822821496, -4.588637097000181]],
+	"CUENCA": [[40.00576519124411, -2.304364662046331], [40.164778237896634, -2.0332938832695873]],
+	"GIRONA": [[41.9465897934368, 2.7826123924928443], [42.02804990799506, 2.8480169141342278]],
+	"GRANADA": [[37.14256015065813, -3.6817916920195044], [37.215910040694226, -3.546108310694117]],
+	"GUADALAJARA": [[40.583054455303575, -3.2761795677660435], [40.71747627444257, -3.0863254668297624]],
+	"HUELVA": [[37.107923501930664, -6.963550603859656], [37.33777440359294, -6.8321151387081525]],
+	"HUESCA": [[42.04449505870274, -0.473081456816824], [42.22797270966249, -0.3606660825861303]],
+	"JAEN": [[37.73631286629099, -3.8351851924194587], [37.91686778876532, -3.7183026106845336]],
+	"LAS_PALMAS_DE_GRAN_CANARIA": [[27.84203302540596, -15.516557964132282], [28.169736238953856, -15.376003890080566]],
+	"LEON": [[42.5474292046605, -5.6114771735377], [42.64029356018956, -5.540656803863453]],
+	"LLEIDA": [[41.592937019900354, 0.4074303096782716], [41.70467887262945, 0.6890936649255155]],
+	"LOGRO\u00d1O": [[42.43932913006685, -2.5223950068173173], [42.49403461498723, -2.3899400117041583]],
+	"LUGO": [[42.938907203581095, -7.595801218750588], [43.052939846097985, -7.532488324398222]],
+	"MADRID": [[40.31887178135178, -3.837529178765385], [40.60947949003023, -3.5180997646423706]],
+	"MALAGA": [[36.638420195015335, -4.576320982521629], [36.8296326893902, -4.317441049734902]],
+	"MELILLA": [[35.26923254880266, -2.9653483470725295], [35.318492603431245, -2.9231765421523885]],
+	"MURCIA": [[37.71667069151668, -1.377035952410803], [38.06196901665388, -0.873861810927638]],
+	"OURENSE": [[42.29354467133031, -8.002603870728846], [42.39547303999401, -7.806113190160998]],
+	"OVIEDO": [[43.29668158529231, -5.985589354084534], [43.397779134257675, -5.768419611876028]],
+	"PALENCIA": [[41.94814125933984, -4.640445195725296], [42.03464970576986, -4.501972093283916]],
+	"PALMA_DE_MALLORCA": [[39.503887336275724, 2.5730620128893102], [39.651357305882776, 2.846990449568401]],
+	"PONTEVEDRA": [[42.34546815, -8.70300327], [42.46203992, -8.58303238]],
+	"SALAMANCA": [[40.933326305071574, -5.735861129380681], [40.988630749327406, -5.624859479990431]],
+	"SANTANDER": [[43.431825503167005, -3.887027344902123], [43.4906748570711, -3.7457982745574574]],
+	"SANTA_CRUZ_DE_TENERIFE": [[28.413362061001628, -16.33985175789889], [28.57859471391632, -16.153354717113487]],
+	"SEGOVIA": [[40.868305451384565, -4.2429619488841075], [40.96933646611996, -4.0766488208175815]],
+	"SEVILLA": [[37.308453019061496, -6.021096152872931], [37.45129037503927, -5.858225150278835]],
+	"SORIA": [[41.74922265754361, -2.6039700668104593], [41.839927564238074, -2.4039385069291512]],
+	"TARRAGONA": [[41.06567680835621, 1.1807586854496228], [41.166736350684936, 1.3751600771046173]],
+	"TERUEL": [[40.26538954759723, -1.2377376640095983], [40.425793454469996, -1.038860908742777]],
+	"TOLEDO": [[39.82694464569666, -4.10926535750872], [39.90990109948291, -3.919496677892761]],
+	"VALENCIA": [[39.27909180502377, -0.43142744238314384], [39.55124663014604, -0.27579234349203163]],
+	"VALLADOLID": [[41.54079271401496, -4.797048804462712], [41.6928663530794, -4.670130074035456]],
+	"VIGO": [[42.15168393457127, -8.818017027920192], [42.30438342695995, -8.622222674228505]],
+	"ZAMORA": [[41.463034028775716, -5.815959383874215], [41.531479212224475, -5.718064741993686]],
+	"ZARAGOZA": [[41.50181163393004, -1.1028192876777694], [41.77341244215746, -0.7658635858843285]]
+	}
+	
 
     // Generate dropdown options dynamically
     var citySelector = document.getElementById('cities');
@@ -116,6 +245,97 @@
       citySelector.appendChild(option);
     });
 
+	var legends = {
+        visualizeChanges: [
+          { color: '#d3d3d3', label: 'Unchanged' },
+          { color: '#d5a6bd', label: '2021 Changes' },
+          { color: '#f4a460', label: '2023 Changes' }
+        ],
+        classifyChanges: [
+		  { color: '#d3d3d3', label: 'Unchanged' },
+		  { color: '#90ee90', label: 'New' },
+		  { color: '#ffcccb', label: 'Extinguished' },
+		  { color: '#add8e6', label: 'Only Geometry Change' },
+		  { color: '#F8C89F', label: 'Only Use Change' },
+		  { color: '#dda0dd', label: 'Changed Use and Geometry' }
+        ],
+		urbanLandUse: [
+		  { color: '#F68D8D', label: 'Single-Family Residentials' },
+		  { color: '#F59342', label: 'Multi-Family Residentials' },
+		  { color: '#864F84', label: 'Industrial' },
+		  { color: '#D4AC0D', label: 'Commerce and Office' },
+		  { color: '#b0b0b0', label: 'Not Built' },
+		  { color: '#2471A3', label: 'Others' }
+		],
+		singleTransformations: [
+		  { color: '#d3d3d3', label: 'Unchanged' },
+		  { color: '#2471A3', label: 'Aggregation' },
+		  { color: '#02A400', label: 'Subdivision' },
+		  { color: '#ffcccb', label: 'Reconfiguration' },
+		  { color: '#864F84', label: 'Reshape' },
+		  { color: '#5b5b5b', label: 'Negligible' }
+		],
+		groupedTransformations: [
+		  { color: '#d3d3d3', label: 'Unchanged' },
+		  { color: '#2471A3', label: 'Aggregation' },
+		  { color: '#02A400', label: 'Subdivision' },
+		  { color: '#ffcccb', label: 'Reconfiguration' },
+		  { color: '#D4AC0D', label: 'Reconfiguration towards subdivision' },
+		  { color: '#67feff', label: 'Reconfiguration towards aggregation' },
+		  { color: '#864F84', label: 'Reshape' },
+		  { color: '#5b5b5b', label: 'Negligible'}
+		]
+	};
+	
+	var descriptions = {
+	visualizeChanges: {
+	  title: 'Visualize Changes',
+	  text: 'This mode allows you to visualize changes between the selected years. Common parcels are displayed in light gray, while the parcels specific to 2021 and 2023 are shown in different colors.'
+	},
+	classifyChanges: {
+	  title: 'Classify Changes',
+	  text: 'This mode classifies changes in the parcels. Different colors represent various types of changes, such as unchanged use with different area, changed use with different area, changed use with same area, extinguished parcels, and new parcels.'
+	},
+	urbanLandUse: {
+	  title: 'Urban Land Use',
+	  text: 'This mode shows the urban land use classification. Different colors represent various types of land use, such as commercial/offices, others, industrial, residential unifamiliar, residential plurifamiliar, and parcels without buildings.'
+	},
+	singleTransformations: {
+	  title: 'Single Transformations',
+	  text: 'This mode shows single transformations in the parcels for the selected years. Different colors represent single transformations in 2021 and 2023.'
+	},
+	groupedTransformations: {
+	  title: 'Grouped Transformations',
+	  text: 'This mode shows grouped transformations in the parcels for the selected years. Different colors represent grouped transformations in 2021 and 2023.'
+	}
+	};
+
+	function updateLegendItems(mode) {
+        var legendItemsContainer = document.getElementById('legendItems');
+        legendItemsContainer.innerHTML = ''; // Clear existing legend items
+
+        legends[mode].forEach(item => {
+          var legendItem = document.createElement('div');
+          legendItem.className = 'item';
+          var colorBox = document.createElement('span');
+          colorBox.className = 'color-box';
+          colorBox.style.backgroundColor = item.color;
+          var label = document.createElement('span');
+          label.className = 'label';
+          label.innerText = item.label;
+          legendItem.appendChild(colorBox);
+          legendItem.appendChild(label);
+          legendItemsContainer.appendChild(legendItem);
+        });
+      }
+	 // Function to update description
+	function updateDescription(mode) {
+		var descriptionTitle = document.getElementById('descriptionTitle');
+		var descriptionText = document.getElementById('descriptionText');
+
+		descriptionTitle.innerText = descriptions[mode].title;
+		descriptionText.innerText = descriptions[mode].text;
+	}
     // Base URL for GeoServer WMS requests
     var baseUrl = 'https://sim4plan.uah.es/geoserver/parcel_transformation_analysis/wms';
 
@@ -150,7 +370,7 @@
       });
     }
 
-    // Create layers for all cities and both years
+	// Create layers for all cities and both years
     var cityLayers = {};
     cities.forEach(city => {
       cityLayers[city] = {
@@ -165,59 +385,26 @@
 		"2023_cl": createWmsLayer(generateParams(city, "2023", "YEAR=2023 AND ATTR_CL<>'UU_SA'", "parcel_classification")),
 
 		"urbanLandUse_2021": createWmsLayer(generateParams(city, "2021", "YEAR=2021", "UrbanLandUse")),
-		"urbanLandUse_2023": createWmsLayer(generateParams(city, "2023", "YEAR=2023 OR ATTR_CL='UU_SA'", "UrbanLandUse"))
-
+		"urbanLandUse_2023": createWmsLayer(generateParams(city, "2023", "YEAR=2023 OR ATTR_CL='UU_SA'", "UrbanLandUse")),
+		
+		"single_transformations_2021": createWmsLayer(generateParams(city, "2021", "YEAR=2021 AND ATTR_CL<>'UU_SA'", "Single_TR")),
+		"single_transformations_2023": createWmsLayer(generateParams(city, "2023", "YEAR=2023 AND ATTR_CL<>'UU_SA'", "Single_TR")),
+		
+		"CONCOMP_transformations_2021": createWmsLayer(generateParams(city, "2021", "YEAR=2021 AND ATTR_CL<>'UU_SA'", "CONCOMP_TR")),
+		"CONCOMP_transformations_2023": createWmsLayer(generateParams(city, "2023", "YEAR=2023 AND ATTR_CL<>'UU_SA'", "CONCOMP_TR"))
       };
-      if (city === "ALICANTE") {
-        cityLayers[city]["2021_simple"].addTo(map2021);
-        cityLayers[city]["common2021"].addTo(map2021);
-        cityLayers[city]["2023_simple"].addTo(map2023);
-        cityLayers[city]["common2023"].addTo(map2023);
-        map2021.fitBounds(cityBounds["ALICANTE"]);
-        map2023.fitBounds(cityBounds["ALICANTE"]);
-      }
     });
 
-    // Handle city selection from the dropdown
-    document.getElementById('cities').addEventListener('change', function(event) {
-      var selectedCity = event.target.value;
-      updateLayers(selectedCity);
-      map2021.fitBounds(cityBounds[selectedCity]);
-      map2023.fitBounds(cityBounds[selectedCity]);
-    });
-
-    document.getElementById('urbanLandUse').addEventListener('click', function() {
-      var selectedCity = document.getElementById('cities').value;
-      updateLayers(selectedCity, "urbanLandUse");
-    });
-	
-	document.getElementById('visualizeChanges').addEventListener('click', function() {
-      var selectedCity = document.getElementById('cities').value;
-      updateLayers(selectedCity, "visualizeChanges");
-    });
-
-    document.getElementById('classifyChanges').addEventListener('click', function() {
-      var selectedCity = document.getElementById('cities').value;
-      updateLayers(selectedCity, "classifyChanges");
-    });
-	
-	function removeLayers(map) {
-      map.eachLayer(layer => {
-        if (layer._url && layer._url.indexOf('openstreetmap.org') === -1) { // Remove non-base layers
-          console.log('Removing layer:', layer);
-          map.removeLayer(layer);
-        }
-      });
-    }
-	
+    // Function to update layers based on selected city and mode
     function updateLayers(city, mode = "visualizeChanges") {
-      console.log(`Updating layers for city: ${city}`);
-      
-      // Remove existing layers safely
-      removeLayers(map2021);
-      removeLayers(map2023);
-	  
-	  if (cityLayers[city]) {
+      if (cityLayers[city]) {
+        Object.values(cityLayers).forEach(modes => {
+          Object.values(modes).forEach(layer => {
+            map2021.removeLayer(layer);
+            map2023.removeLayer(layer);
+          }); // Remove all layers
+        });
+
 		if (mode === "visualizeChanges") {
 		
 		  cityLayers[city]["common2021"].addTo(map2021);
@@ -236,12 +423,66 @@
 		  
 		  cityLayers[city]["urbanLandUse_2021"].addTo(map2021);
 		  cityLayers[city]["urbanLandUse_2023"].addTo(map2023);
+		
+		} else if (mode === "singleTransformations") {
+		  
+		  cityLayers[city]["common2021"].addTo(map2021);
+		  cityLayers[city]["single_transformations_2021"].addTo(map2021);
+		  cityLayers[city]["common2023"].addTo(map2023);
+		  cityLayers[city]["single_transformations_2023"].addTo(map2023);
+		
+		} else if (mode === "groupedTransformations") {
+		
+		  cityLayers[city]["common2021"].addTo(map2021);
+		  cityLayers[city]["CONCOMP_transformations_2021"].addTo(map2021);
+		  cityLayers[city]["common2023"].addTo(map2023);
+		  cityLayers[city]["CONCOMP_transformations_2023"].addTo(map2023);
 
 		}
+		
+		// Update legend items
+        updateLegendItems(mode);
+		
+		// Update descritions
+		updateDescription(mode);
+		
 	  } else {
 		console.error(`No layers found for city: ${city}`);
-	  }
-	}
+      }
+    }
+
+    // Handle city selection from the dropdown
+    document.getElementById('cities').addEventListener('change', function(event) {
+      var selectedCity = event.target.value;
+      updateLayers(selectedCity);
+	  map2021.fitBounds(cityBounds[selectedCity]);
+	  map2023.fitBounds(cityBounds[selectedCity]);
+    });
+
+	document.getElementById('urbanLandUse').addEventListener('click', function() {
+      var selectedCity = document.getElementById('cities').value;
+      updateLayers(selectedCity, "urbanLandUse");
+    });
+	
+	document.getElementById('visualizeChanges').addEventListener('click', function() {
+      var selectedCity = document.getElementById('cities').value;
+      updateLayers(selectedCity, "visualizeChanges");
+    });
+
+    document.getElementById('classifyChanges').addEventListener('click', function() {
+      var selectedCity = document.getElementById('cities').value;
+      updateLayers(selectedCity, "classifyChanges");
+    });
+	
+	document.getElementById('singleTransformations').addEventListener('click', function() {
+	  var selectedCity = document.getElementById('cities').value;
+	  updateLayers(selectedCity, "singleTransformations");
+	});
+
+	document.getElementById('groupedTransformations').addEventListener('click', function() {
+	  var selectedCity = document.getElementById('cities').value;
+	  updateLayers(selectedCity, "groupedTransformations");
+	});
 
     // Sync maps
     function syncMaps(map1, map2) {
@@ -265,8 +506,17 @@
     // Sync the maps
     syncMaps(map2021, map2023);
 
-    // Set initial city
-    updateLayers("ALICANTE");
+    // Automatically select and update the initial city
+    function selectInitialCity(city) {
+      var citySelector = document.getElementById('cities');
+      citySelector.value = city;
+      var event = new Event('change');
+      citySelector.dispatchEvent(event);
+    }
+
+    // Set initial city to ALICANTE (or any city you prefer)
+    selectInitialCity("ALICANTE");
+	
   </script>
 </body>
 </html>
