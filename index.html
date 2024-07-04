@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Leaflet Map with WMS Layers, Controls, and Legend</title>
+  <title>Cadastral parcels transformations in spanish main cities</title>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
@@ -290,23 +290,23 @@
 	var descriptions = {
 	visualizeChanges: {
 	  title: 'Visualize Changes',
-	  text: 'This mode allows you to visualize changes between the selected years. Common parcels are displayed in light gray, while the parcels specific to 2021 and 2023 are shown in different colors.'
+	  text: "Basic visualization that highlights the parcels that experimented any change between 2021 and 2023 with different colors. It's based on an attribute analysis of the Cadastral Reference Number (CRN)."
 	},
 	classifyChanges: {
 	  title: 'Classify Changes',
-	  text: 'This mode classifies changes in the parcels. Different colors represent various types of changes, such as unchanged use with different area, changed use with different area, changed use with same area, extinguished parcels, and new parcels.'
+	  text: "Visualization of the different types of changes different colors. It's based on an attribute analysis of the Cadastral Reference Number (CRN). A geometry change is considered when the AREA attribute experimented any change for any given CRN. Lost parcels are those that have a CRN that is present in 2021 but extinguished on 2023. New parcels are those that have a new CRN that didn¡t exist in 2021."
 	},
 	urbanLandUse: {
 	  title: 'Urban Land Use',
-	  text: 'This mode shows the urban land use classification. Different colors represent various types of land use, such as commercial/offices, others, industrial, residential unifamiliar, residential plurifamiliar, and parcels without buildings.'
+	  text: 'Visualization of the classification of main urban land uses of parcels. It has been produced with Cadastral Classifier QGIS Plugin, using detailed cadastral data provided by spanish General Directorate Cadastre.'
 	},
 	singleTransformations: {
 	  title: 'Single Transformations',
-	  text: 'This mode shows single transformations in the parcels for the selected years. Different colors represent single transformations in 2021 and 2023.'
+	  text: 'Visualization of the transformations processes identified with a spatial analysis, consisted in the overlaying relations of the parcecels that experimented any geometry change between both years.'
 	},
 	groupedTransformations: {
 	  title: 'Grouped Transformations',
-	  text: 'This mode shows grouped transformations in the parcels for the selected years. Different colors represent grouped transformations in 2021 and 2023.'
+	  text: 'Visualization of the transformations processes identified with a more complex spatial analysis, that involves the obtaning of connectec componentes of all related parcels inside a graph of the overlaying relations.'
 	}
 	};
 
