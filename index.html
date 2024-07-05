@@ -18,9 +18,25 @@
 		font-weight: bold;
 	}
 	
-    body, html { height: 100%; margin: 0; padding: 0; }
-    #mapContainer { flex: 1; display: flex; height: 100%; border: 2px solid #000; box-sizing: border-box; }
-	#map2021, #map2023 { flex: 1; position: relative; border: 2px solid #000; background-color: white; }
+	body, html { height: 100%; margin: 0; padding: 0; }
+	#mapContainer { flex: 1; display: flex; height: 100%; border: 2px solid #000; box-sizing: border-box; }
+	  
+	#map2021 {
+		width: 45%;
+		height: 100%;
+		border: 2px solid black;
+		background-color: white; /* Ensure the map background is white */
+		position: relative;
+	}
+	
+	#map2023 {
+		width: 55%;
+		height: 100%;
+		border: 2px solid black;
+		background-color: white; /* Ensure the map background is white */
+		position: relative;
+	}
+	  
 	#separator { width: 2px; background: #000; height: 100%; }
 	#controls { width: 250px; display: flex; flex-direction: column; justify-content: flex-start; align-items: center; padding: 10px; box-sizing: border-box; background-color: #f9f9f9;}
 	#controls select, #controls button { padding: 10px; font-size: 14px; margin-bottom: 10px; width: 100%; }
@@ -78,7 +94,7 @@
 	  padding-top: 5px; /* Add some padding for spacing */
 	}
 
-    .legend { padding: 12.5px; background: white; line-height: 1.875; color: #555; position: absolute; bottom: 38px; right: 20px; z-index: 1000; border-radius: 5px; box-shadow: 0 0 15px rgba(0,0,0,0.6); width: auto; max-width: 300px; }
+    	.legend { padding: 12.5px; background: white; line-height: 1.875; color: #555; position: absolute; bottom: 38px; right: 20px; z-index: 1000; border-radius: 5px; box-shadow: 0 0 15px rgba(0,0,0,0.6); width: auto; max-width: 300px; }
 	.legend .item { display: flex; align-items: center; margin-bottom: 6.25px; flex-wrap: wrap; }
 	.legend .item span.color-box { width: 25px; height: 25px; display: inline-block; margin-right: 12.5px; }
 	.legend .item span.label { font-size: 14px; flex: 1; }
