@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Cadastral parcels transformations in spanish main cities</title>
+  <title>Leaflet Map with WMS Layers, Controls, and Legend</title>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
@@ -14,7 +14,7 @@
 	#map2021, #map2023 { flex: 1; position: relative; border: 2px solid #000; }
 	#separator { width: 2px; background: #000; height: 100%; }
 	#controls { width: 250px; display: flex; flex-direction: column; justify-content: flex-start; align-items: center; padding: 10px; box-sizing: border-box; background-color: #f9f9f9; border-left: 2px solid #000; }
-	#controls select, #controls button { padding: 10px; font-size: 18px; margin-bottom: 10px; width: 100%; }
+	#controls select, #controls button { padding: 8; font-size: 12; margin-bottom: 10px; width: 100%; }
 	#controls {
 	  position: absolute;
 	  right: 20px;
@@ -37,8 +37,8 @@
 	}
 
 	#controls button {
-	  padding: 10px;
-	  font-size: 18px;
+	  padding: 8px;
+	  font-size: 12px;
 	  width: 100%;
 	}
 	#description {
@@ -290,23 +290,23 @@
 	var descriptions = {
 	visualizeChanges: {
 	  title: 'Visualize Changes',
-	  text: "Basic visualization that highlights the parcels that experimented any change between 2021 and 2023 with different colors. It's based on an attribute analysis of the Cadastral Reference Number (CRN)."
+	  text: 'This mode allows you to visualize changes between the selected years. Common parcels are displayed in light gray, while the parcels specific to 2021 and 2023 are shown in different colors.'
 	},
 	classifyChanges: {
 	  title: 'Classify Changes',
-	  text: "Visualization of the different types of changes different colors. It's based on an attribute analysis of the Cadastral Reference Number (CRN). A geometry change is considered when the AREA attribute experimented any change for any given CRN. Lost parcels are those that have a CRN that is present in 2021 but extinguished on 2023. New parcels are those that have a new CRN that didn¡t exist in 2021."
+	  text: 'This mode classifies changes in the parcels. Different colors represent various types of changes, such as unchanged use with different area, changed use with different area, changed use with same area, extinguished parcels, and new parcels.'
 	},
 	urbanLandUse: {
 	  title: 'Urban Land Use',
-	  text: 'Visualization of the classification of main urban land uses of parcels. It has been produced with Cadastral Classifier QGIS Plugin, using detailed cadastral data provided by spanish General Directorate Cadastre.'
+	  text: 'This mode shows the urban land use classification. Different colors represent various types of land use, such as commercial/offices, others, industrial, residential unifamiliar, residential plurifamiliar, and parcels without buildings.'
 	},
 	singleTransformations: {
 	  title: 'Single Transformations',
-	  text: 'Visualization of the transformations processes identified with a spatial analysis, consisted in the overlaying relations of the parcecels that experimented any geometry change between both years.'
+	  text: 'This mode shows single transformations in the parcels for the selected years. Different colors represent single transformations in 2021 and 2023.'
 	},
 	groupedTransformations: {
 	  title: 'Grouped Transformations',
-	  text: 'Visualization of the transformations processes identified with a more complex spatial analysis, that involves the obtaning of connectec componentes of all related parcels inside a graph of the overlaying relations.'
+	  text: 'This mode shows grouped transformations in the parcels for the selected years. Different colors represent grouped transformations in 2021 and 2023.'
 	}
 	};
 
@@ -515,7 +515,7 @@
     }
 
     // Set initial city to ALICANTE (or any city you prefer)
-    selectInitialCity("MADRID");
+    selectInitialCity("ALICANTE");
 	
   </script>
 </body>
