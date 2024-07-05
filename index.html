@@ -9,12 +9,21 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/proj4js/2.7.5/proj4.js"></script>
   
   <style>
+  
+  	body, h1, h2, p, div, span, button, select, option, legend, epsg-code{
+		font-family: 'Arial', sans-serif;
+	}
+	
+	h1, h2, span, button, select, legend, epsg-code {
+		font-weight: bold;
+	}
+	
     body, html { height: 100%; margin: 0; padding: 0; }
     #mapContainer { flex: 1; display: flex; height: 100%; border: 2px solid #000; box-sizing: border-box; }
-	#map2021, #map2023 { flex: 1; position: relative; border: 2px solid #000; }
+	#map2021, #map2023 { flex: 1; position: relative; border: 2px solid #000; background-color: white; }
 	#separator { width: 2px; background: #000; height: 100%; }
-	#controls { width: 250px; display: flex; flex-direction: column; justify-content: flex-start; align-items: center; padding: 10px; box-sizing: border-box; background-color: #f9f9f9; border-left: 2px solid #000; }
-	#controls select, #controls button { padding: 10px; font-size: 18px; margin-bottom: 10px; width: 100%; }
+	#controls { width: 250px; display: flex; flex-direction: column; justify-content: flex-start; align-items: center; padding: 10px; box-sizing: border-box; background-color: #f9f9f9;}
+	#controls select, #controls button { padding: 10px; font-size: 14px; margin-bottom: 10px; width: 100%; }
 	#controls {
 	  position: absolute;
 	  right: 20px;
@@ -25,7 +34,7 @@
 	  padding: 10px;
 	  background: white;
 	  border-radius: 5px;
-	  box-shadow: 0 0 15px rgba(0,0,0,0.2);
+	  box-shadow: 0 0 15px rgba(0,0,0,0.6);
 	  z-index: 1000;
 	}
 
@@ -38,7 +47,7 @@
 
 	#controls button {
 	  padding: 10px;
-	  font-size: 18px;
+	  font-size: 14px;
 	  width: 100%;
 	}
 	#description {
@@ -48,20 +57,44 @@
 	  width: 100%;
 	}
 
-	#description h3 {
+	#description h2 {
 	  margin: 0 0 10px 0;
-	  font-size: 18px;
+	  font-size: 14px;
 	}
 
 	#description p {
 	  margin: 0;
-	  font-size: 16px;
+	  font-size: 14px;
 	}
-    .legend { padding: 12.5px; background: white; line-height: 1.875; color: #555; position: absolute; bottom: 38px; right: 20px; z-index: 1000; border-radius: 5px; box-shadow: 0 0 15px rgba(0,0,0,0.2); width: auto; max-width: 300px; }
+	
+	.label-normal {
+	  font-size: 14px;
+	}
+	
+	.label-with-border {
+	  font-size: 14px;
+	  border-top: 1px solid #ddd;
+	  display: block; /* Ensure the border spans the full width */
+	  padding-top: 5px; /* Add some padding for spacing */
+	}
+
+    .legend { padding: 12.5px; background: white; line-height: 1.875; color: #555; position: absolute; bottom: 38px; right: 20px; z-index: 1000; border-radius: 5px; box-shadow: 0 0 15px rgba(0,0,0,0.6); width: auto; max-width: 300px; }
 	.legend .item { display: flex; align-items: center; margin-bottom: 6.25px; flex-wrap: wrap; }
 	.legend .item span.color-box { width: 25px; height: 25px; display: inline-block; margin-right: 12.5px; }
-	.legend .item span.label { font-size: 17.5px; flex: 1; }
+	.legend .item span.label { font-size: 14px; flex: 1; }
+	
+	.legend-checkbox-container {
+	  margin-top: 10px;
+	  display: flex;
+	  align-items: center;
+	}
+
+	.legend-checkbox {
+	  margin-right: 5px;
+	}
+	
 	.leaflet-control-container .leaflet-bottom.leaflet-left { display: flex; align-items: center; }
+
 	.map-title {
 	  position: absolute;
 	  top: 10px;
@@ -71,26 +104,27 @@
 	  padding: 5px 10px;
 	  border: 2px solid #000;
 	  border-radius: 5px;
-	  font-size: 16px;
+	  font-size: 14px;
 	  font-weight: bold;
 	  z-index: 1000;
 	  white-space: nowrap;
 	}
 	.epsg-code { background: white; padding: 2px 5px; border: 1px solid #000; border-radius: 3px; font-size: 12px; z-index: 1000; margin-left: 10px; }
+	
   </style>
 </head>
 <body>
   <div id="controls">
-    <label for="cities">Select a city: </label>
+    <label for="cities" class='label-normal'>Select a city: class:</label>
     <select id="cities"></select>
+	<label for="cities" class='label-with-border' >Select a visualization mode: </label>
 	<button id="urbanLandUse">Urban Land Use</button>
-    <button id="toggleBaseMap">Toggle Base Map</button>
-    <button id="visualizeChanges">Visualize Changes</button>
-    <button id="classifyChanges">Classify Changes</button>
+    <button id="visualizeChanges">Changes Identification</button>
+    <button id="classifyChanges">Changes Classification</button>
 	<button id="singleTransformations">Single Transformations</button>
-    <button id="groupedTransformations">Grouped Transformations</button>
+    <button id="groupedTransformations">Transformations of Connected Components</button>
 	<div id="description">
-		<h3 id="descriptionTitle"></h3>
+		<h2 id="descriptionTitle"></h2>
 		<p id="descriptionText"></p>
 	</div>
   </div>
@@ -107,6 +141,10 @@
   
   <div id="legend" class="legend">
     <div id="legendItems"></div>
+	<div class="legend-checkbox-container">
+	  <input type="checkbox" id="toggleBasemap" class="legend-checkbox" checked>
+	  <label for="toggleBasemap">Show Basemap</label>
+	</div>
   </div>
   
   <script>
@@ -127,13 +165,13 @@
 
     // Add CartoDB Positron tile layers (Grayscale) with cache-busting parameter
     var baseLayer2021 = L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png?' + getCacheBustingParam(), {
-      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+      attribution: 'contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
       subdomains: 'abcd',
       maxZoom: 19
     });
 
     var baseLayer2023 = L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png?' + getCacheBustingParam(), {
-      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+      attribution: 'contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
       subdomains: 'abcd',
       maxZoom: 19
     });
@@ -143,6 +181,7 @@
 
     // Add scale control (only meters and larger scale)
     var scaleControl = L.control.scale({ maxWidth: 200, metric: true, imperial: false }).addTo(map2021);
+	var scaleControl = L.control.scale({ maxWidth: 200, metric: true, imperial: false }).addTo(map2023);
 
     // Add EPSG code next to scale control
     var epsgCodeControl = L.control({ position: 'bottomleft' });
@@ -152,25 +191,20 @@
       return div;
     };
     epsgCodeControl.addTo(map2021);
+		
+	// Handle checkbox change event
+	document.getElementById('toggleBasemap').addEventListener('change', function () {
+	  if (this.checked) {
+		map2021.addLayer(baseLayer2021);
+		map2023.addLayer(baseLayer2023);
+	  } else {
+		map2021.removeLayer(baseLayer2021);
+		map2023.removeLayer(baseLayer2023);
+	  }
+	  
+	  updateLayers(document.getElementById('cities').value, lastSelectedMode);
 	
-	// Function to toggle base map
-    function toggleBaseMap() {
-      if (map2021.hasLayer(baseLayer2021)) {
-        map2021.removeLayer(baseLayer2021);
-      } else {
-        map2021.addLayer(baseLayer2021);
-      }
-      if (map2023.hasLayer(baseLayer2023)) {
-        map2023.removeLayer(baseLayer2023);
-      } else {
-        map2023.addLayer(baseLayer2023);
-      }
-
-      // Re-add WMS layers to ensure they are on top
-      updateLayers(document.getElementById('cities').value);
-    }
-	
-    document.getElementById('toggleBaseMap').addEventListener('click', toggleBaseMap);
+	});
 
     // List of city names
     var cities = ['A_CORUÑA', 'ALBACETE', 'ALICANTE', 'ALMERIA', 'AVILA', 'BADAJOZ',
@@ -234,14 +268,13 @@
 	"ZAMORA": [[41.463034028775716, -5.815959383874215], [41.531479212224475, -5.718064741993686]],
 	"ZARAGOZA": [[41.50181163393004, -1.1028192876777694], [41.77341244215746, -0.7658635858843285]]
 	}
-	
 
     // Generate dropdown options dynamically
     var citySelector = document.getElementById('cities');
     cities.forEach(city => {
       var option = document.createElement('option');
       option.value = city;
-      option.text = city.replace('_', ' '); // Replace underscores with spaces for display
+      option.text = city.replace(/_/g, ' '); // Replace underscores with spaces for display
       citySelector.appendChild(option);
     });
 
@@ -450,6 +483,8 @@
 		console.error(`No layers found for city: ${city}`);
       }
     }
+	
+	var lastSelectedMode = "visualizeChanges"; // Default mode
 
     // Handle city selection from the dropdown
     document.getElementById('cities').addEventListener('change', function(event) {
@@ -461,27 +496,32 @@
 
 	document.getElementById('urbanLandUse').addEventListener('click', function() {
       var selectedCity = document.getElementById('cities').value;
-      updateLayers(selectedCity, "urbanLandUse");
+	  lastSelectedMode = "urbanLandUse";
+      updateLayers(selectedCity, lastSelectedMode);
     });
 	
 	document.getElementById('visualizeChanges').addEventListener('click', function() {
       var selectedCity = document.getElementById('cities').value;
-      updateLayers(selectedCity, "visualizeChanges");
+	  lastSelectedMode = "visualizeChanges";
+      updateLayers(selectedCity, lastSelectedMode);
     });
 
     document.getElementById('classifyChanges').addEventListener('click', function() {
       var selectedCity = document.getElementById('cities').value;
-      updateLayers(selectedCity, "classifyChanges");
+	  lastSelectedMode = "classifyChanges";
+      updateLayers(selectedCity, lastSelectedMode);
     });
 	
 	document.getElementById('singleTransformations').addEventListener('click', function() {
 	  var selectedCity = document.getElementById('cities').value;
-	  updateLayers(selectedCity, "singleTransformations");
+	  lastSelectedMode = "singleTransformations";
+	  updateLayers(selectedCity, lastSelectedMode);
 	});
 
 	document.getElementById('groupedTransformations').addEventListener('click', function() {
 	  var selectedCity = document.getElementById('cities').value;
-	  updateLayers(selectedCity, "groupedTransformations");
+	  lastSelectedMode = "groupedTransformations";
+	  updateLayers(selectedCity, lastSelectedMode);
 	});
 
     // Sync maps
