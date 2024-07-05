@@ -21,23 +21,33 @@
 	body, html { height: 100%; margin: 0; padding: 0; }
 	#mapContainer { flex: 1; display: flex; height: 100%; border: 2px solid #000; box-sizing: border-box; }
 	  
-	#map2021 {
-		width: 45%;
-		height: 100%;
-		border: 2px solid black;
-		background-color: white; /* Ensure the map background is white */
-		position: relative;
-	}
+    #map2021, #map2023 {
+      height: 100%;
+      border: 1px solid black;
+      background-color: white; /* Ensure the map background is white */
+      position: relative;
+    }
+
+    #map2021 {
+      width: 50%;
+    }
+
+    #map2023 {
+      width: 50%;
+    }
+	  	
+    /* Styles for the resizable divider */
+    #divider {
+      width: 5px;
+      cursor: ew-resize;
+      background-color: #000;
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      left: 50%;
+      z-index: 1000;
+    }
 	
-	#map2023 {
-		width: 55%;
-		height: 100%;
-		border: 2px solid black;
-		background-color: white; /* Ensure the map background is white */
-		position: relative;
-	}
-	  
-	#separator { width: 2px; background: #000; height: 100%; }
 	#controls { width: 250px; display: flex; flex-direction: column; justify-content: flex-start; align-items: center; padding: 10px; box-sizing: border-box; background-color: #f9f9f9;}
 	#controls select, #controls button { padding: 10px; font-size: 14px; margin-bottom: 10px; width: 100%; }
 	#controls {
@@ -149,7 +159,7 @@
 		<div id="map2021">
 			<div class="map-title">Situation of parcels in 2021</div>
 		</div>
-		<div id="separator"></div>
+		<div id="divider"></div>
 		<div id="map2023">
 			<div class="map-title">Situation of parcels in 2023</div>
 		</div>
@@ -175,9 +185,9 @@
       return Math.floor(Math.random() * 1000000);
     }
 
-    // Initialize the maps with a default view
-    var map2021 = L.map('map2021').setView([38.3452, -0.4810], 13); // Center on Alicante
-    var map2023 = L.map('map2023').setView([38.3452, -0.4810], 13); // Center on Alicante
+    // Initialize the maps 
+    var map2021 = L.map('map2021');
+    var map2023 = L.map('map2023');
 
     // Add CartoDB Positron tile layers (Grayscale) with cache-busting parameter
     var baseLayer2021 = L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png?' + getCacheBustingParam(), {
@@ -230,7 +240,6 @@
 	'MELILLA', 'MURCIA', 'OURENSE', 'OVIEDO', 'PALENCIA', 'PALMA_DE_MALLORCA',
 	'PONTEVEDRA', 'SALAMANCA', 'SANTA_CRUZ_DE_TENERIFE','SANTANDER', 'SEGOVIA', 'SEVILLA',
 	'SORIA', 'TARRAGONA', 'TERUEL', 'TOLEDO', 'VALENCIA', 'VALLADOLID','ZAMORA', 'ZARAGOZA'];
-
 	
     // Bounding boxes for the cities in EPSG:4326
     var cityBounds = {
@@ -561,6 +570,60 @@
 
     // Sync the maps
     syncMaps(map2021, map2023);
+	
+	// Prevent text selection when dragging the divider
+    function preventTextSelection() {
+      document.body.style.userSelect = 'none';
+    }
+	
+	function allowTextSelection() {
+      document.body.style.userSelect = '';
+    }
+
+    // Resizable divider logic
+    var isResizing = false;
+    var lastDownX = 0;
+
+    document.getElementById('divider').addEventListener('mousedown', function(e) {
+      isResizing = true;
+      lastDownX = e.clientX;
+	  preventTextSelection(); // Prevent text selection when dragging
+	  
+	  document.addEventListener('mousemove', resizeMaps);
+	  document.addEventListener('mouseup', stopResizing);
+	  
+    });
+
+    function resizeMaps(e) {
+      if (!isResizing) return;
+
+      var minX = 60; // Minimum X position
+      var maxX = document.body.offsetWidth - 290; // Maximum X position
+
+      var clientX = e.clientX;
+
+      // Ensure clientX is within bounds
+      if (clientX < minX) clientX = minX;
+      if (clientX > maxX) clientX = maxX;
+	  
+      var map2021Width = clientX / document.body.offsetWidth * 100;
+      var map2023Width = 100 - map2021Width; // Calculate remaining width for map2023
+
+      document.getElementById('map2021').style.width = map2021Width + '%';
+      document.getElementById('map2023').style.width = map2023Width + '%';
+
+      document.getElementById('divider').style.left = map2021Width + '%';
+
+      map2021.invalidateSize();
+      map2023.invalidateSize();
+    }
+
+    function stopResizing() {
+      isResizing = false;
+	  allowTextSelection(); // Allow text selection again
+      document.removeEventListener('mousemove', resizeMaps);
+      document.removeEventListener('mouseup', stopResizing);
+    }
 
     // Automatically select and update the initial city
     function selectInitialCity(city) {
