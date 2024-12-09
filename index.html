@@ -433,23 +433,23 @@
     cities.forEach(city => {
       cityLayers[city] = {
 	  
-        "common2021": createWmsLayer(generateParams(city, "", "ATTR_CL='UU_SA'", "common")),
-		"common2023": createWmsLayer(generateParams(city, "", "ATTR_CL='UU_SA'", "common")),
+        "common2021": createWmsLayer(generateParams(city, "", "ATTR_CL='UU_UA'", "common")),
+		"common2023": createWmsLayer(generateParams(city, "", "ATTR_CL='UU_UA'", "common")),
 
-        "2021_simple": createWmsLayer(generateParams(city, "2021", "YEAR=2021 AND ATTR_CL<>'UU_SA'", "year2021")),
-		"2023_simple": createWmsLayer(generateParams(city, "2023", "YEAR=2023 AND ATTR_CL<>'UU_SA'", "year2023")),
+        "2021_simple": createWmsLayer(generateParams(city, "2021", "YEAR=2021 AND ATTR_CL<>'UU_UA'", "year2021")),
+		"2023_simple": createWmsLayer(generateParams(city, "2023", "YEAR=2023 AND ATTR_CL<>'UU_UA'", "year2023")),
 
-        "2021_cl": createWmsLayer(generateParams(city, "2021", "YEAR=2021 AND ATTR_CL<>'UU_SA'", "parcel_classification")),
-		"2023_cl": createWmsLayer(generateParams(city, "2023", "YEAR=2023 AND ATTR_CL<>'UU_SA'", "parcel_classification")),
+        "2021_cl": createWmsLayer(generateParams(city, "2021", "YEAR=2021 AND ATTR_CL<>'UU_UA'", "parcel_classification")),
+		"2023_cl": createWmsLayer(generateParams(city, "2023", "YEAR=2023 AND ATTR_CL<>'UU_UA'", "parcel_classification")),
 
 		"urbanLandUse_2021": createWmsLayer(generateParams(city, "2021", "YEAR=2021", "UrbanLandUse")),
-		"urbanLandUse_2023": createWmsLayer(generateParams(city, "2023", "YEAR=2023 OR ATTR_CL='UU_SA'", "UrbanLandUse")),
+		"urbanLandUse_2023": createWmsLayer(generateParams(city, "2023", "YEAR=2023 OR ATTR_CL='UU_UA'", "UrbanLandUse")),
 		
-		"single_transformations_2021": createWmsLayer(generateParams(city, "2021", "YEAR=2021 AND ATTR_CL<>'UU_SA'", "Single_TR")),
-		"single_transformations_2023": createWmsLayer(generateParams(city, "2023", "YEAR=2023 AND ATTR_CL<>'UU_SA'", "Single_TR")),
+		"single_transformations_2021": createWmsLayer(generateParams(city, "2021", "YEAR=2021 AND ATTR_CL<>'UU_UA'", "Single_TR")),
+		"single_transformations_2023": createWmsLayer(generateParams(city, "2023", "YEAR=2023 AND ATTR_CL<>'UU_UA'", "Single_TR")),
 		
-		"CONCOMP_transformations_2021": createWmsLayer(generateParams(city, "2021", "YEAR=2021 AND ATTR_CL<>'UU_SA'", "CONCOMP_TR")),
-		"CONCOMP_transformations_2023": createWmsLayer(generateParams(city, "2023", "YEAR=2023 AND ATTR_CL<>'UU_SA'", "CONCOMP_TR"))
+		"CONCOMP_transformations_2021": createWmsLayer(generateParams(city, "2021", "YEAR=2021 AND ATTR_CL<>'UU_UA'", "CONCOMP_TR")),
+		"CONCOMP_transformations_2023": createWmsLayer(generateParams(city, "2023", "YEAR=2023 AND ATTR_CL<>'UU_UA'", "CONCOMP_TR"))
       };
     });
 
