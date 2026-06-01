@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Cadastral parcels transformations in spanish main cities</title>
+  <title>Cadastral parcels transformations in Spanish main cities</title>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
@@ -137,6 +137,108 @@
 	}
 	.epsg-code { background: white; padding: 2px 5px; border: 1px solid #000; border-radius: 3px; font-size: 12px; z-index: 1000; margin-left: 10px; }
 	
+
+	/* Collapsible attribution box for Spanish Cadastre open data */
+	.cadastre-attribution {
+	  position: absolute;
+	  left: 14px;
+	  bottom: 58px;
+	  z-index: 1200;
+	  font-family: Arial, sans-serif;
+	}
+
+	.cadastre-toggle {
+	  width: 54px;
+	  height: 54px;
+	  padding: 0;
+	  border: 0;
+	  border-radius: 12px;
+	  background: white;
+	  box-shadow: 0 0 12px rgba(0,0,0,0.35);
+	  cursor: pointer;
+	  display: flex;
+	  align-items: center;
+	  justify-content: center;
+	}
+
+	.cadastre-toggle:hover {
+	  box-shadow: 0 0 16px rgba(0,0,0,0.5);
+	}
+
+	.cadastre-icon {
+	  width: 54px;
+	  height: 54px;
+	  border-radius: 12px;
+	  display: block;
+	}
+
+	.cadastre-panel {
+	  display: none;
+	  width: 430px;
+	  max-width: calc(100vw - 40px);
+	  background: white;
+	  border-radius: 6px;
+	  box-shadow: 0 0 15px rgba(0,0,0,0.5);
+	  overflow: hidden;
+	  color: #333;
+	}
+
+	.cadastre-attribution.expanded .cadastre-toggle {
+	  display: none;
+	}
+
+	.cadastre-attribution.expanded .cadastre-panel {
+	  display: block;
+	}
+
+	.cadastre-panel-header {
+	  position: relative;
+	  background: #f7f7f7;
+	}
+
+	.cadastre-full-logo {
+	  width: 100%;
+	  height: auto;
+	  display: block;
+	}
+
+	.cadastre-close {
+	  position: absolute;
+	  top: 6px;
+	  right: 8px;
+	  width: 26px;
+	  height: 26px;
+	  border: 0;
+	  border-radius: 50%;
+	  background: rgba(255,255,255,0.9);
+	  font-size: 18px;
+	  line-height: 24px;
+	  cursor: pointer;
+	  box-shadow: 0 0 6px rgba(0,0,0,0.25);
+	}
+
+	.cadastre-disclaimer {
+	  padding: 10px 12px 12px 12px;
+	  font-size: 12px;
+	  line-height: 1.4;
+	  font-weight: normal;
+	}
+
+	.cadastre-disclaimer strong {
+	  font-weight: bold;
+	}
+
+	@media (max-width: 700px) {
+	  .cadastre-attribution {
+	    left: 10px;
+	    bottom: 58px;
+	  }
+
+	  .cadastre-panel {
+	    width: calc(100vw - 20px);
+	  }
+	}
+
   </style>
 </head>
 <body>
@@ -173,7 +275,46 @@
 	</div>
   </div>
   
+
+
+  <div id="cadastreAttribution" class="cadastre-attribution">
+    <button id="cadastreToggle" class="cadastre-toggle" type="button" aria-expanded="false" aria-controls="cadastrePanel" title="Data source and attribution">
+      <img src="./logo_cadaster_simplified.png" alt="Spanish Cadastre data source" class="cadastre-icon">
+    </button>
+    <div id="cadastrePanel" class="cadastre-panel" aria-hidden="true">
+      <div class="cadastre-panel-header">
+        <img src="./logo_cadaster_complete.png" alt="Directorate General for Cadastre" class="cadastre-full-logo">
+        <button id="cadastreClose" class="cadastre-close" type="button" aria-label="Close attribution panel">&times;</button>
+      </div>
+      <div class="cadastre-disclaimer">
+        <strong>Data source:</strong> These results were produced using Spanish cadastral open data disseminated by the Directorate General for Cadastre through the Cadastral Electronic Site: <a href="http://www.sedecatastro.gob.es/" target="_blank" rel="noopener noreferrer">www.sedecatastro.gob.es</a>. The transformations, classifications, and visualizations are derived research outputs prepared by the authors and should not be interpreted as official cadastral information.
+      </div>
+    </div>
+  </div>
+
   <script>
+
+
+    // Toggle the Spanish Cadastre attribution panel
+    var cadastreAttribution = document.getElementById('cadastreAttribution');
+    var cadastreToggle = document.getElementById('cadastreToggle');
+    var cadastreClose = document.getElementById('cadastreClose');
+    var cadastrePanel = document.getElementById('cadastrePanel');
+
+    function setCadastrePanel(open) {
+      cadastreAttribution.classList.toggle('expanded', open);
+      cadastreToggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+      cadastrePanel.setAttribute('aria-hidden', open ? 'false' : 'true');
+    }
+
+    cadastreToggle.addEventListener('click', function () {
+      setCadastrePanel(true);
+    });
+
+    cadastreClose.addEventListener('click', function () {
+      setCadastrePanel(false);
+    });
+
   
     // Define multiple CRS in proj4
 	proj4.defs("EPSG:25830", "+proj=utm +zone=30 +ellps=GRS80 +units=m +no_defs");
@@ -356,7 +497,7 @@
 	},
 	urbanLandUse: {
 	  title: 'Urban Land Use',
-	  text: 'Visualization of the classification of main urban land uses of parcels. It has been produced with Cadastral Classifier QGIS Plugin, using detailed cadastral data provided by spanish General Directorate Cadastre.'
+	  text: 'Visualization of the classification of main urban land uses of parcels. It has been produced with Cadastral Classifier QGIS Plugin, using detailed cadastral data provided by the Spanish Directorate General for Cadastre.'
 	},
 	singleTransformations: {
 	  title: 'Single Transformations',
